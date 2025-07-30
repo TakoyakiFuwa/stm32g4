@@ -149,8 +149,8 @@ void TFT_SendColor(uint16_t rgb565)
   */
 void TFT_SetRect(uint16_t X1, uint16_t Y1, uint16_t width, uint16_t height)
 {
-	width+=X1;
-	height+=Y1;
+	width+=X1-1;
+	height+=Y1-1;
 	
 	TFT_SendCmd(0x2A);
 	TFT_SendData(X1>>8);

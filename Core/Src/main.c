@@ -95,6 +95,7 @@ int main(void)
   QY_Printf("Hello! \r\n");
   Init_TFT();
   TFT_Test();
+  TFTG_Test();
   
   /* USER CODE END 2 */
 
