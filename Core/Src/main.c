@@ -21,6 +21,8 @@
 #include "usart.h"
 #include "gpio.h"
 #include "qy_printf.h"
+#include "qy_TFT.h"
+#include "qy_Graph.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -90,15 +92,22 @@ int main(void)
   MX_GPIO_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+  QY_Printf("Hello! \r\n");
+  Init_TFT();
+  TFT_Test();
   
   /* USER CODE END 2 */
-	
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
     /* USER CODE END WHILE */
-
+	for(int i=0;;i++)
+	{
+		QY_Printf("正常运行:%d \r\n",i);
+		HAL_Delay(1000);
+	}
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

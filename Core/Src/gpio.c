@@ -47,16 +47,6 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
-	//我拿TFT的背光板当作指示灯用了...
-	GPIO_InitTypeDef GPIO_InitStruct;
-//	GPIO_InitStruct.Alternate = 
-	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pin = GPIO_PIN_0;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
-	HAL_GPIO_Init(GPIOA,&GPIO_InitStruct);
-	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_0,GPIO_PIN_SET);
-	
 }
 
 /* USER CODE BEGIN 2 */
