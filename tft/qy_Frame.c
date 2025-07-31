@@ -65,10 +65,6 @@ void TFTF_RenderAll(void)
 	
 }
 
-void TFTF_Test(void)
-{
-	QY_Printf("TFT_Frame的测试 \r\n");
-}
 
 
 

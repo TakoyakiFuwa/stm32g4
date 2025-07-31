@@ -22,6 +22,7 @@
 #include "gpio.h"
 #include "qy_printf.h"
 #include "TFT_ILI9341.h"
+#include "TFT_font.h"
 //#include "qy_Graph.h"
 //#include "qy_Frame.h"
 
@@ -95,7 +96,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   QY_Printf("Hello! \r\n");
   Init_TFT();
-  TFT_Test();
+  TFTF_Test();
 
   /* USER CODE END 2 */
 

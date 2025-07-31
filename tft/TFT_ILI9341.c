@@ -1,6 +1,5 @@
 #include "TFT_ILI9341.h"
 #include "gpio.h"
-#include "qy_printf.h"
 //utf-8
 
 /*	TFT的底层驱动
@@ -97,12 +96,7 @@ void TFT_Swap(uint8_t byte)
 
 //屏幕长和宽
 uint16_t D_TFT_WIDTH = 240;
-uint16_t D_TFT_HEIGHT = 320;
-//四原色(x
-uint16_t COLOR_RED 		=0;
-uint16_t COLOR_YELLOW 	=0;
-uint16_t COLOR_BLUE		=0;
-uint16_t COLOR_GREEN	=0;		
+uint16_t D_TFT_HEIGHT = 320;		
 //两个初始化函数
 static void TFT_Reset(void);
 static void TFT_SoftwareInit(void);
@@ -122,12 +116,8 @@ void Init_TFT(void)
 	TFT_Reset();
 	//软件初始化
 	TFT_SoftwareInit();
-	//四原色赋值
-	COLOR_RED 		= TFT_RGB888To565(0xFFB6C1);
-	COLOR_YELLOW 	= TFT_RGB888To565(0xFAD5A5);
-	COLOR_BLUE		= TFT_RGB888To565(0x5FCDE4);
-	COLOR_GREEN		= TFT_RGB888To565(0x7cFC00);
-
+	//简单绘制背景
+	TFT_Test();
 }
 /**@brief  硬件复位
   */
@@ -226,6 +216,12 @@ uint16_t TFT_RGB888To565(uint32_t RGB888)
   */
 void TFT_Test(void)
 {
+	uint16_t COLOR_RED 		= TFT_RGB888To565(0xFFB6C1);
+	uint16_t COLOR_YELLOW 	= TFT_RGB888To565(0xFAD5A5);
+	uint16_t COLOR_BLUE		= TFT_RGB888To565(0x5FCDE4);
+	uint16_t COLOR_GREEN	= TFT_RGB888To565(0x7cFC00);
+	//		红 黄
+	//绘制  	蓝 绿
 	uint16_t size = (D_TFT_HEIGHT/2)*(D_TFT_WIDTH/2)+20;
 	TFT_SetRect(D_TFT_WIDTH/2,0,D_TFT_WIDTH/2,D_TFT_HEIGHT/2);
 	for(int i=0;i<size;i++)
@@ -246,10 +242,9 @@ void TFT_Test(void)
 	for(int i=0;i<size;i++)
 	{
 		//想要切实观察刷新方向时可以添加这个Delay
-		HAL_Delay(2);
+//		HAL_Delay(3);
 		TFT_SendColor(COLOR_BLUE);
-	}
-	
+	}	
 }
 /**@brief  TFT软件初始化
   */
