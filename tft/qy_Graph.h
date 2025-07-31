@@ -13,7 +13,6 @@ typedef struct tftg_pic{
 	uint16_t color_front;
 	uint16_t color_back;
 	const uint8_t* pic;
-//	tftg_direction direction;
 }tftg_pic;
 
 void TFTG_Test(void);

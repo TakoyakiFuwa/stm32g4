@@ -1,5 +1,5 @@
 #include "qy_Graph.h"
-#include "qy_TFT.h"
+#include "TFT_ILI9341.h"
 #include "qy_printf.h"
 #include "font.h"
 
@@ -12,24 +12,11 @@
  * 		  | 		   x
  *填充方向:+------------>
  */
-//typedef struct tftg_direction{
-//	int8_t x_first;	//1先渲染x方向(三) 0先渲染y方向(川)
-//	int8_t x_right;	//1向右渲染->  0向左渲染<-
-//	int8_t y_up;	//1向上渲染^   0向下渲染v
-//}tftg_direction;
+/*	关于图案、文字、数字(变量)绘制
+ *			2025/7/30-16:56
+ */
 ////关于图像渲染先等一下吧...
 //void TFTG_DrawPic(tftg_pic p)
-//{
-//	if(p.direction.x_first)
-//	{//渲染x方向(三)
-//	
-//	}
-//	else
-//	{//渲染y方向(川)
-//		
-//	}
-//	TFT_SetRect(p.rect.x,p.rect.y,p.rect.width,p.rect.height);
-//}
 
 /**@brief  适配字体库里面1608字体
   *@param  p  默认大小8*16

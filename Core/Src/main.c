@@ -21,8 +21,9 @@
 #include "usart.h"
 #include "gpio.h"
 #include "qy_printf.h"
-#include "qy_TFT.h"
-#include "qy_Graph.h"
+#include "TFT_ILI9341.h"
+//#include "qy_Graph.h"
+//#include "qy_Frame.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -95,8 +96,7 @@ int main(void)
   QY_Printf("Hello! \r\n");
   Init_TFT();
   TFT_Test();
-  TFTG_Test();
-  
+
   /* USER CODE END 2 */
 
   /* Infinite loop */

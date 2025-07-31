@@ -2,11 +2,28 @@
 #include "usart.h"
 #include <stdint.h>
 
+/*	通过串口实现了类似C语言中printf的函数
+ *	使用时只需补充U_Putchar即可使用QY_Printf
+ *
+ *	%d/%D 整数
+ *  %s/%S 字符串
+ *  %c/%C 单个字符
+ *	%h/%H/%x/%X 十六进制
+ *  %b/%B 二进制数
+ *	(因为以前用的单片机没有浮点型，所以没做浮点型适配)
+ *		秦.2025/7/31
+ */
+
+/**@brief  putchar
+  *@add    是接口 使用时根据单片机完善更改
+  */
 void U_Putchar(uint8_t _char)
 {
+	//当前适配的是g431单片机的PA9(TX)/PA10(Rx)
 	HAL_UART_Transmit(&huart1,(uint8_t*)&_char,sizeof(char),1000);
 }
 
+/*  以下内容固定 不用更改   */
 /*  下方是U_Printf实现部分，耦合性很低（没有），可移植  */
 
 /**@brief  发送一段文本
@@ -164,3 +181,8 @@ void QY_Printf(const char* words,...)
 	}
 	va_end(ap);
 }
+
+
+
+
+

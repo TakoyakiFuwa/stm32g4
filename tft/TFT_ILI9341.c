@@ -1,10 +1,20 @@
-#include "qy_TFT.h"
+#include "TFT_ILI9341.h"
 #include "gpio.h"
 #include "qy_printf.h"
-/*	准备自己写一下屏幕相关的驱动
+//utf-8
+
+/*	TFT的底层驱动
  *	ILI9341
  *		2025/7/30-11:06
  */
+
+/*	以下是关于引脚接线内容
+ *	可根据单片机类型和接口并口/SPI(软件/硬件)进行调整和适配
+ *	ILI9341
+ *  当前配置为:CS低电平选中，RST低电平复位，D/C高电平数据/低电平指令
+ *            MOSI传数据，SCK下降沿时屏幕采集信号
+ */
+
 /*	PA0  ->CS
  *	PA1	 ->RST
  *	PA2	 ->D/C
@@ -13,9 +23,9 @@
  */
 /* 				^ y						^ y
  * 				|						|
- * 				|	红  黄				|	--->3
- * 				|						|	--->2
- * 				|	蓝  绿				|	--->1
+ * 				|	红  黄				|	3--->
+ * 				|						|	2--->
+ * 				|	蓝  绿				|	1--->
  * 				|			x			|			 x
  * 	当前显示方向:+------------>	填充方向:+------------>
  */
@@ -35,18 +45,10 @@
 #define PIN_SCKH	GPIOA->BSRR = (uint32_t)GPIO_PIN_4
 #define PIN_SCKL	GPIOA->BRR  = (uint32_t)GPIO_PIN_4
 
-//屏幕长和宽
-uint16_t D_TFT_WIDTH = 240;
-uint16_t D_TFT_HEIGHT = 320;
-//四原色(x
-uint16_t COLOR_RED 		=0;
-uint16_t COLOR_YELLOW 	=0;
-uint16_t COLOR_BLUE		=0;
-uint16_t COLOR_GREEN	=0;		
-
 /**@brief  TFT引脚初始化
   *@param  void
   *@retval void
+  *@add    移植时根据接线调整
   */
 static void Init_TFT_PIN(void)
 {
@@ -61,10 +63,11 @@ static void Init_TFT_PIN(void)
 /**@brief  与TFT交换数据
   *@param  byte 交换的数据
   *@retval void
+  *@add    交换1byte数据，可根据接口调整成并口
   */
 void TFT_Swap(uint8_t byte)
 {
-	PIN_CSL;
+	PIN_CSL;//对hal库不太熟悉 有时间回来改成硬件SPI
 	for(int i=0;i<8;i++)
 	{
 		if( (byte&(0x80>>i)) != 0 )
@@ -81,11 +84,26 @@ void TFT_Swap(uint8_t byte)
 	PIN_CSH;
 }
 
+
+
+
 /*
  *	以下是ILI9341的软件驱动
  *	与接口无关 无需更改 
  */
 
+
+
+
+//屏幕长和宽
+uint16_t D_TFT_WIDTH = 240;
+uint16_t D_TFT_HEIGHT = 320;
+//四原色(x
+uint16_t COLOR_RED 		=0;
+uint16_t COLOR_YELLOW 	=0;
+uint16_t COLOR_BLUE		=0;
+uint16_t COLOR_GREEN	=0;		
+//两个初始化函数
 static void TFT_Reset(void);
 static void TFT_SoftwareInit(void);
 /**@brief  TFT(ILI9341)初始化函数
@@ -110,7 +128,6 @@ void Init_TFT(void)
 	COLOR_BLUE		= TFT_RGB888To565(0x5FCDE4);
 	COLOR_GREEN		= TFT_RGB888To565(0x7cFC00);
 
-	QY_Printf("ILI9341初始化 \r\n");	
 }
 /**@brief  硬件复位
   */
@@ -187,7 +204,6 @@ static void TFT_SetRotation(uint8_t rotation)
 		D_TFT_WIDTH  = 240;
 		D_TFT_HEIGHT = 320;
 	}
-	QY_Printf("输出:%H \r\n",rotation);
 	TFT_SendData(rotation);
 }
 /**@brief  从RGB888转换成RGB565
@@ -230,10 +246,9 @@ void TFT_Test(void)
 	for(int i=0;i<size;i++)
 	{
 		//想要切实观察刷新方向时可以添加这个Delay
-//		HAL_Delay(3);
+		HAL_Delay(2);
 		TFT_SendColor(COLOR_BLUE);
 	}
-	QY_Printf(":) \r\n");
 	
 }
 /**@brief  TFT软件初始化
