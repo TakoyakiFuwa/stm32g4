@@ -9,7 +9,7 @@ void TFTF_Pic01(uint16_t x,uint16_t y,const char* pic,uint16_t width,uint16_t he
 void TFTF_Pic565(uint16_t x,uint16_t y,const char* pic,uint16_t width,uint16_t height);
 void TFTF_ENChar(uint16_t x,uint16_t y,uint16_t width,const char* en_font,uint16_t ft_color,uint16_t bk_color);
 void TFTF_CNChar(uint16_t x,uint16_t y,uint16_t width,const char* cn_font,uint16_t ft_color,uint16_t bk_color);
-
+  
 /*  测试接口  */
 void TFTF_Test(void);
 

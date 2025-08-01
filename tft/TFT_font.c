@@ -1,22 +1,20 @@
 #include "TFT_font.h"
-#include "qy_printf.h"//用于代码编写时调试输出，可删
 
 /*	打算脱离屏幕驱动和单片机底层 
  *	来实现一个完全在上层的取模实现库
  *	
  *	通过实现以下接口后即可使用
  *	注意... >>>屏幕显示方向<<< 和字符取模方向需要调整为以下方向
- *			^ y
- *			|
- *			|   3---> 
- *			|   2---> 
- *			|   1---> 
- *			|			 x 
- *	填充方向:+------------>   
- *	（即img2lcd中的 扫描模式:水平扫描 自底至顶扫描）
- *	（以及PCtoLCD2002中 设置 阴码 逐行式 逆向(低位在前) 
- *					   文字水平翻转 ）
- *	注：以下提到坐标相关都是指 左下角
+ *	填充方向:+------------>
+ *			|			 x
+ *			|	1  2  3
+ *			|	|  |  |
+ *			|	|  |  |
+ *			|	V  V  V
+ *			v y
+ *	（即img2lcd中的 扫描模式:	垂直扫描）
+ *	（以及PCtoLCD2002中 设置  阴码 逐列式 逆向(低位在前) ）
+ *	注：以下提到坐标相关都是指 左上角
  *				2025/7/31-9:39
  */
 
@@ -116,20 +114,21 @@ void TFTF_Pic565(uint16_t x,uint16_t y,const char* pic,uint16_t width,uint16_t h
 }
 /**@brief  显示PCtoLCD2002取模的英文字符
   *@param  xy 		位置
-  *@param  width	英文宽度 注:英文字符高度为宽度的2倍
+  *@param  height	英文宽度 注:英文字符宽度为高度的1/2
   *@param  en_font	字符模板
   *@param  ft_color(FronT) 前景色 即1显示的颜色
   *@param  bk_color(BacKground) 背景色 即0显示的颜色
   *@retval void
   */
-void TFTF_ENChar(uint16_t x,uint16_t y,uint16_t width,const char* en_font,uint16_t ft_color,uint16_t bk_color)
+void TFTF_ENChar(uint16_t x,uint16_t y,uint16_t height,const char* en_font,uint16_t ft_color,uint16_t bk_color)
 {
-	TFTF_SetRect(x,y,width,width*2);
-	for(int i=width*width*2/8-1;i>=0;i--)
+	TFTF_SetRect(x,y,height/2,height);
+	uint32_t a=height*height/2/8;
+	for(int i=0;i<a;i++)
 	{
 		for(int j=0;j<8;j++)
 		{
-			if( (en_font[i]&(0x80>>j)) != 0 )
+			if( (en_font[i]&(0x01<<j)) != 0 )
 			{
 				TFTF_Pixel(ft_color);
 			}
@@ -168,37 +167,119 @@ void TFTF_CNChar(uint16_t x,uint16_t y,uint16_t width,const char* cn_font,uint16
 }
 
 
-void TFTF_Test(void)
+
+
+/*
+ *	以下全是关于数码管数字字体测试的内容
+ */
+#define COLOR_BLUE    0x07FF
+#define COLOR_RED     0xEC10
+#define COLOR_YELLOW  0xEF31
+#define COLOR_GREEN   0x7FC0
+void FONT3216_NAME(const char* font,uint16_t y)
 {
-	TFTF_Frame(10,20,50,64,0x897B,3);
-	TFTF_Pic01(65,20,qyf_pic01_github_6464,64,64,QYF_COLOR_RED,QYF_COLOR_YELLOW);
-	TFTF_Pic565(130,20,qyf_pic595_bing_6432,64,32);
-	TFTF_ENChar(130,50,8,qyf_EN_DJB_8[1+'0'-' '],QYF_COLOR_RED,QYF_COLOR_YELLOW);
-	TFTF_ENChar(130+8,50,16,qyf_EN_DJB_16[2+'0'-' '],QYF_COLOR_RED,QYF_COLOR_YELLOW);
-	TFTF_ENChar(130+8+16,50,24,qyf_EN_DJB_24[3+'0'-' '],QYF_COLOR_RED,QYF_COLOR_YELLOW);
-//	TFTF_ENChar(130+8+16+24,50,32,qyf_EN_DJB_32[4+'0'-' '],QYF_COLOR_RED,QYF_COLOR_YELLOW);
-	TFTF_CNChar(130+24*0,100,24,qyf_CN_DJB_24[0],QYF_COLOR_RED,QYF_COLOR_YELLOW);
-	TFTF_CNChar(130+24*1,100,24,qyf_CN_DJB_24[1],QYF_COLOR_RED,QYF_COLOR_YELLOW);
-	TFTF_CNChar(130+24*2,100,24,qyf_CN_DJB_24[2],QYF_COLOR_RED,QYF_COLOR_YELLOW);
-	TFTF_CNChar(130+24*3,100,24,qyf_CN_DJB_24[3],QYF_COLOR_RED,QYF_COLOR_YELLOW);
-	TFTF_CNChar(130+24*4,100,24,qyf_CN_DJB_24[4],QYF_COLOR_RED,QYF_COLOR_YELLOW);
-	
-	char test_string[] = {"String.123!+-{|}"};
-	for(int i=0;test_string[i]!='\0';i++)
-	{
-		TFTF_ENChar(10+i*16,150,16,qyf_EN_DJB_16[test_string[i]-' '],QYF_COLOR_RED,QYF_COLOR_YELLOW);
-	}
-	
-	QY_Printf("这里是TFT_Font测试接口 \r\n");
+	TFTF_ENChar(18*0,y-32,32,(const char*)&font[0*64],QYF_COLOR_RED,QYF_COLOR_YELLOW);//3216
+	TFTF_ENChar(18*1,y-32,32,(const char*)&font[1*64],QYF_COLOR_RED,QYF_COLOR_YELLOW);
+	TFTF_ENChar(18*2,y-32,32,(const char*)&font[2*64],QYF_COLOR_RED,QYF_COLOR_YELLOW);
+	TFTF_ENChar(18*3,y-32,32,(const char*)&font[3*64],QYF_COLOR_RED,QYF_COLOR_YELLOW);
+}
+void FONT1608_TEST(const char* font,uint16_t y)
+{
+	TFTF_ENChar( 68+10*1,y-16,16,(const char*)&font[1*16],QYF_COLOR_RED,QYF_COLOR_YELLOW);//1608
+	TFTF_ENChar( 68+10*2,y-16,16,(const char*)&font[6*16],QYF_COLOR_RED,QYF_COLOR_YELLOW);
+	TFTF_ENChar( 68+10*3,y-16,16,(const char*)&font[0*16],QYF_COLOR_RED,QYF_COLOR_YELLOW);
+	TFTF_ENChar( 68+10*4,y-16,16,(const char*)&font[8*16],QYF_COLOR_RED,QYF_COLOR_YELLOW);
+}
+void FONT2412_TEST(const char* font,uint16_t y)
+{
+	TFTF_ENChar(108+14*1,y-24,24,(const char*)&font[2*36],QYF_COLOR_RED,QYF_COLOR_YELLOW);//2412
+	TFTF_ENChar(108+14*2,y-24,24,(const char*)&font[4*36],QYF_COLOR_RED,QYF_COLOR_YELLOW);
+	TFTF_ENChar(108+14*3,y-24,24,(const char*)&font[1*36],QYF_COLOR_RED,QYF_COLOR_YELLOW);
+	TFTF_ENChar(108+14*4,y-24,24,(const char*)&font[2*36],QYF_COLOR_RED,QYF_COLOR_YELLOW);
+}
+void FONT3216_TEST(const char* font,uint16_t y)
+{
+	TFTF_ENChar(164+16*1,y-32,32,(const char*)&font[3*64],QYF_COLOR_RED,QYF_COLOR_YELLOW);//3216
+	TFTF_ENChar(164+16*2,y-32,32,(const char*)&font[2*64],QYF_COLOR_RED,QYF_COLOR_YELLOW);
+	TFTF_ENChar(164+16*3,y-32,32,(const char*)&font[1*64],QYF_COLOR_RED,QYF_COLOR_YELLOW);
+	TFTF_ENChar(164+16*4,y-32,32,(const char*)&font[6*64],QYF_COLOR_RED,QYF_COLOR_YELLOW);
+	TFTF_ENChar(164+18*5,y-32,32,(const char*)&font[8*64],QYF_COLOR_RED,QYF_COLOR_YELLOW);
 }
 
 
+//40-80-120-160-200-240
+//PIXEL_LCD
+void FONT_PIXEL(uint16_t y)
+{
+	FONT3216_NAME((const char*) qyf__EN_PIXEL_3216,y);
+	FONT1608_TEST((const char*)qyf_NUM_PIXEL_1608,y);
+	FONT2412_TEST((const char*)qyf_NUM_PIXEL_2412,y);
+	FONT3216_TEST((const char*)qyf_NUM_PIXEL_3216,y);
+	FONT3216_NAME((const char*) qyf__EN_PIXEL_3216,y);
+	FONT1608_TEST((const char*)qyf_NUM_PIXEL_1608,y);
+	FONT2412_TEST((const char*)qyf_NUM_PIXEL_2412,y);
+	FONT3216_TEST((const char*)qyf_NUM_PIXEL_3216,y);
+}
+//NI7SEG
+void FONT_NI7SEG(uint16_t y)
+{
+	FONT3216_NAME((const char*) qyf__EN_NI7SEG_3216,y);
+	FONT1608_TEST((const char*)qyf_NUM_NI7SEG_1608,y);
+	FONT2412_TEST((const char*)qyf_NUM_NI7SEG_2412,y);
+	FONT3216_TEST((const char*)qyf_NUM_NI7SEG_3216,y);
+}
+//MingLIU
+void FONT_MINGLIU(uint16_t y)
+{
+	FONT3216_NAME((const char*) qyf__EN_MINGLIU_3216,y);
+	FONT1608_TEST((const char*)qyf_NUM_MINGLIU_1608,y);
+	FONT2412_TEST((const char*)qyf_NUM_MINGLIU_2412,y);
+	FONT3216_TEST((const char*)qyf_NUM_MINGLIU_3216,y);
+}
+//YFF(电子数字.TTF)
+void FONT_YFF(uint16_t y)
+{
+	
+	FONT3216_NAME((const char*) qyf__EN_YFF_3216,y);
+	FONT1608_TEST((const char*)qyf_NUM_YFF_1608,y);
+	FONT2412_TEST((const char*)qyf_NUM_YFF_2412,y);
+	FONT3216_TEST((const char*)qyf_NUM_YFF_3216,y);
+
+}
+//PIXymbolsDigitClocksW90
+void FONT_PIXY(uint16_t y)
+{
+	FONT3216_NAME((const char*) qyf__EN_PIXY_3216,y);
+	FONT1608_TEST((const char*)qyf_NUM_PIXY_1608,y);
+	FONT2412_TEST((const char*)qyf_NUM_PIXY_2412,y);
+	FONT3216_TEST((const char*)qyf_NUM_PIXY_3216,y);
+}
+//advanced-pixel-lcd-7-1
+void FONT_ADVANCE(uint16_t y)
+{
+	FONT3216_NAME((const char*) qyf__EN_ADVANCE_3216,y);
+	FONT1608_TEST((const char*)qyf_NUM_ADVANCE_1608,y);
+	FONT2412_TEST((const char*)qyf_NUM_ADVANCE_2412,y);
+	FONT3216_TEST((const char*)qyf_NUM_ADVANCE_3216,y);
+}
 
 
-
-
-
-
+//五个数码管字体测试
+void FontDig_Test(void)
+{
+	FONT_PIXEL(40);
+	FONT_NI7SEG(80);
+	FONT_MINGLIU(120);
+	FONT_YFF(160);
+	FONT_PIXY(200);
+	FONT_ADVANCE(240);	
+}
+/**测试接口
+  */
+void TFTF_Test(void)
+{
+	FontDig_Test();
+}
 
 
 

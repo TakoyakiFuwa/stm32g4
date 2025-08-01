@@ -20,13 +20,14 @@
  *	PA3	 ->MOSI
  *	PA4	 ->SCK
  */
-/* 				^ y						^ y
- * 				|						|
- * 				|	红  黄				|	3--->
- * 				|						|	2--->
- * 				|	蓝  绿				|	1--->
- * 				|			x			|			 x
+/* 	
  * 	当前显示方向:+------------>	填充方向:+------------>
+ * 				|			 x			|			 x
+ * 				|	蓝	绿				|	1  2  3
+ * 				|						|	|  |  |
+ * 				|	红  黄				|	|  |  |
+ * 				|						|	V  V  V
+ *				v y						v y
  */
 //PA0  ->CS
 #define PIN_CSH		GPIOA->BSRR = (uint32_t)GPIO_PIN_0
@@ -82,7 +83,9 @@ void TFT_Swap(uint8_t byte)
 	}
 	PIN_CSH;
 }
-
+//屏幕长和宽
+uint16_t D_TFT_WIDTH = 320;
+uint16_t D_TFT_HEIGHT = 240;
 
 
 
@@ -92,11 +95,7 @@ void TFT_Swap(uint8_t byte)
  */
 
 
-
-
-//屏幕长和宽
-uint16_t D_TFT_WIDTH = 240;
-uint16_t D_TFT_HEIGHT = 320;		
+		
 //两个初始化函数
 static void TFT_Reset(void);
 static void TFT_SoftwareInit(void);
@@ -117,7 +116,13 @@ void Init_TFT(void)
 	//软件初始化
 	TFT_SoftwareInit();
 	//简单绘制背景
-	TFT_Test();
+//	TFT_Test();
+	TFT_SetRect(0,0,D_TFT_WIDTH,D_TFT_HEIGHT);
+	for(int i=0;i<D_TFT_WIDTH*D_TFT_HEIGHT;i++)
+	{
+		TFT_SendColor(0xad55);
+	}
+	
 }
 /**@brief  硬件复位
   */
@@ -159,13 +164,13 @@ void TFT_SetRect(uint16_t X1, uint16_t Y1, uint16_t width, uint16_t height)
 	width+=X1-1;
 	height+=Y1-1;
 	
-	TFT_SendCmd(0x2A);
+	TFT_SendCmd(0x2B);
 	TFT_SendData(X1>>8);
 	TFT_SendData(X1);
 	TFT_SendData(width>>8);
 	TFT_SendData(width);
 
-	TFT_SendCmd(0x2B);
+	TFT_SendCmd(0x2A);
 	TFT_SendData(Y1>>8);
 	TFT_SendData(Y1);
 	TFT_SendData(height>>8);
@@ -175,7 +180,7 @@ void TFT_SetRect(uint16_t X1, uint16_t Y1, uint16_t width, uint16_t height)
 }
 /**@brief  设置屏幕显示方向
   *@param  rotation
-  *@add    D7~D2:MY MX MV ML BGR MH (建议0x68 0b0110 1000->X反转横向显示)
+  *@add    D7~D2:MY MX MV ML BGR MH (建议0x68 0b0110 1100->X反转横向显示)
   *		         MX/MY->XY翻转
   *				 MV->0竖向/1横向显示
   *				 ML/MH->刷新(填充)方向
@@ -184,16 +189,6 @@ void TFT_SetRect(uint16_t X1, uint16_t Y1, uint16_t width, uint16_t height)
 static void TFT_SetRotation(uint8_t rotation)
 {
 	TFT_SendCmd(0x36);
-	if( (rotation&0x20) != 0)
-	{
-		D_TFT_WIDTH  = 320;
-		D_TFT_HEIGHT = 240;
-	}
-	else 
-	{
-		D_TFT_WIDTH  = 240;
-		D_TFT_HEIGHT = 320;
-	}
 	TFT_SendData(rotation);
 }
 /**@brief  从RGB888转换成RGB565
@@ -377,8 +372,16 @@ static void TFT_SoftwareInit(void)
 	TFT_SendCmd(0x29);
 	
 	//设置旋转方向
-	TFT_SetRotation(0x68);
-
+	TFT_SetRotation(0x0C);
+	
+	/**@brief  设置屏幕显示方向
+	  *@param  rotation
+	  *@add    D7~D2:MY MX MV ML BGR MH (建议 0b0000 1000->)
+	  *		         MX/MY->XY翻转
+	  *				 MV->0竖向/1横向显示
+	  *				 ML/MH->刷新(填充)方向
+	  *				 BGR->1
+	  */
 }
 
 
