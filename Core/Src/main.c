@@ -23,6 +23,7 @@
 #include "qy_printf.h"
 #include "TFT_ILI9341.h"
 #include "TFT_font.h"
+#include "TFT_text.h"
 //#include "qy_Graph.h"
 //#include "qy_Frame.h"
 
@@ -97,6 +98,7 @@ int main(void)
   QY_Printf("Hello! \r\n");
   Init_TFT();
   TFTF_Test();
+  TFTT_Test();
 
   /* USER CODE END 2 */
 

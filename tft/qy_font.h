@@ -3,19 +3,18 @@
 #include "stdint.h"
 
 /*	作为TFT的字库
- *	采用 PCtoLCD2002 (设置 阴码 逐行式 逆向(低位在前) 
- *					  文字水平翻转 )
- *	命名是qyf(秦羽Font)_EN英文/CN中文_宽度
+ *	（以及PCtoLCD2002中 设置  阴码 逐列式 逆向(低位在前) ）
+ *	命名是qyf(秦羽Font)_EN英文/CN中文_高度宽度
  *			————2025/7/31-16:30
  */
  //注:	英文的高度=宽度*2 中文的高度=宽度
  //		所以相同尾缀的中文字符是英文字符高度的一半
  
 /*  这里简单填几个颜色测试用  */
-#define QYF_COLOR_BLUE    0x07FF
-#define QYF_COLOR_RED     0xEC10
-#define QYF_COLOR_YELLOW  0xEF31
-#define QYF_COLOR_GREEN   0x7FC0
+uint16_t QYF_COLOR_BLUE    = 0x07FF;
+uint16_t QYF_COLOR_RED     = 0xEC10;
+uint16_t QYF_COLOR_YELLOW  = 0xEF31;
+uint16_t QYF_COLOR_GREEN   = 0x7FC0;
 
 //PIXEL_LCD7
 const char qyf__EN_PIXEL_3216[][64]={

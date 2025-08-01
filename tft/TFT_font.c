@@ -12,7 +12,7 @@
  *			|	|  |  |
  *			|	V  V  V
  *			v y
- *	（即img2lcd中的 扫描模式:	垂直扫描）
+ *	（即img2lcd中的 扫描模式:	垂直扫描 字节内像素数据反序）
  *	（以及PCtoLCD2002中 设置  阴码 逐列式 逆向(低位在前) ）
  *	注：以下提到坐标相关都是指 左上角
  *				2025/7/31-9:39
@@ -74,10 +74,11 @@ void TFTF_Frame(uint16_t x,uint16_t y,uint16_t width,uint16_t height,uint16_t co
 }
 /**@brief  用于显示单色的图片		注:01 指的是只有0和1单色
   *@param  -位置和大小 			注:width建议8的整数倍
-  *@param  ft_color(FronT) 前景色 即1显示的颜色
+  *@param  pic					字模/图片
+  *@param  ft_color(FronT) 		前景色 即1显示的颜色
   *@param  bk_color(BacKground) 背景色 即0显示的颜色
   */
-void TFTF_Pic01(uint16_t x,uint16_t y,const char* pic,uint16_t width,uint16_t height,uint16_t ft_color,uint16_t bk_color)
+void TFTF_Pic01(uint16_t x,uint16_t y,const char* pic,uint16_t height,uint16_t width,uint16_t ft_color,uint16_t bk_color)
 {
 	TFTF_SetRect(x,y,width,height);
 	uint32_t a=width*height/8;
@@ -85,7 +86,7 @@ void TFTF_Pic01(uint16_t x,uint16_t y,const char* pic,uint16_t width,uint16_t he
 	{
 		for(int j=0;j<8;j++)
 		{
-			if( (pic[i]&(0x80>>j)) != 0 )
+			if( (pic[i]&(0x01<<j)) != 0 )
 			{
 				TFTF_Pixel(ft_color);
 			}
@@ -112,14 +113,14 @@ void TFTF_Pic565(uint16_t x,uint16_t y,const char* pic,uint16_t width,uint16_t h
 		//TFTF_Pixel( ( (pic[i]<<8)|pic[i+1] ) );
 	}
 }
-/**@brief  显示PCtoLCD2002取模的英文字符
-  *@param  xy 		位置
-  *@param  height	英文宽度 注:英文字符宽度为高度的1/2
-  *@param  en_font	字符模板
-  *@param  ft_color(FronT) 前景色 即1显示的颜色
-  *@param  bk_color(BacKground) 背景色 即0显示的颜色
-  *@retval void
-  */
+
+
+
+
+
+/*
+ *	以下全是关于数码管数字字体测试的内容
+ */
 void TFTF_ENChar(uint16_t x,uint16_t y,uint16_t height,const char* en_font,uint16_t ft_color,uint16_t bk_color)
 {
 	TFTF_SetRect(x,y,height/2,height);
@@ -139,39 +140,6 @@ void TFTF_ENChar(uint16_t x,uint16_t y,uint16_t height,const char* en_font,uint1
 		}
 	}
 }
-/**@brief  显示PCtoLCD2002取模的汉字，或者图片
-  *@param  xy 		位置
-  *@param  width	中文宽度 注:中文的宽和高一致
-  *@param  cn_font	字符模板
-  *@param  ft_color(FronT) 前景色 即1显示的颜色
-  *@param  bk_color(BacKground) 背景色 即0显示的颜色
-  *@retval void
-  */
-void TFTF_CNChar(uint16_t x,uint16_t y,uint16_t width,const char* cn_font,uint16_t ft_color,uint16_t bk_color)
-{
-	TFTF_SetRect(x,y,width,width);
-	for(int i=width*width/8-1;i>=0;i--)
-	{
-		for(int j=0;j<8;j++)
-		{
-			if( (cn_font[i]&(0x80>>j)) != 0 )
-			{
-				TFTF_Pixel(ft_color);
-			}
-			else
-			{
-				TFTF_Pixel(bk_color);
-			}
-		}
-	}
-}
-
-
-
-
-/*
- *	以下全是关于数码管数字字体测试的内容
- */
 #define COLOR_BLUE    0x07FF
 #define COLOR_RED     0xEC10
 #define COLOR_YELLOW  0xEF31
@@ -264,7 +232,7 @@ void FONT_ADVANCE(uint16_t y)
 }
 
 
-//五个数码管字体测试
+//六个数码管字体测试
 void FontDig_Test(void)
 {
 	FONT_PIXEL(40);
@@ -273,6 +241,8 @@ void FontDig_Test(void)
 	FONT_YFF(160);
 	FONT_PIXY(200);
 	FONT_ADVANCE(240);	
+//	TFTF_Pic01(10,10,qyf_pic01_github_6464,64,64,COLOR_YELLOW,COLOR_BLUE);
+//	TFTF_Pic01(80,10,qyf_NUM_PIXEL_3216[6],32,16,COLOR_RED,COLOR_YELLOW);
 }
 /**测试接口
   */
