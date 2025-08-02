@@ -36,6 +36,7 @@ static void TFTF_Pixel(uint16_t rgb565)
 
 
 
+
 /*  以下是软件实现  */
 /*  移植时不用处理 
  *  如果想要优化效率
@@ -71,6 +72,71 @@ void TFTF_Frame(uint16_t x,uint16_t y,uint16_t width,uint16_t height,uint16_t co
 	TFTF_Rect(x,y+height-thick,width,thick,color);
 	TFTF_Rect(x,y+thick,thick,height-thick*2,color);
 	TFTF_Rect(x+width-thick,y+thick,thick,height-thick*2,color);
+}
+/**@brief  两点之间连线
+  *@param  x1,y1 起始点
+  *@param  x2,y2 终止点
+  *@param  color 颜色
+  *@param  thick 厚度
+  *@add    注：从前辈项目里面ctrl cv来的（函数不错 我的了）
+  */
+void TFT_DrawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2,uint16_t color,int8_t thick)
+{
+	if(thick<=0)
+	{
+		return;
+	}
+	uint16_t t;
+	int xerr = 0, yerr = 0, delta_x, delta_y, distance;
+	int incx, incy, uRow, uCol;
+	int d_thick = thick/2;
+	
+	delta_x = x2 - x1; // 计算坐标增量
+	delta_y = y2 - y1;
+	uRow = x1;
+	uCol = y1;
+	if (delta_x > 0)
+		incx = 1; // 设置单步方向
+	else if (delta_x == 0)
+		incx = 0; // 垂直线
+	else
+	{
+		incx = -1;
+		delta_x = -delta_x;
+	}
+	if (delta_y > 0)
+		incy = 1;
+	else if (delta_y == 0)
+		incy = 0; // 水平线
+	else
+	{
+		incy = -1;
+		delta_y = -delta_y;
+	}
+	if (delta_x > delta_y)
+		distance = delta_x; // 选取基本增量坐标轴
+	else
+		distance = delta_y;
+	for (t = 0; t <= distance + 1; t++) // 画线输出
+	{ // 画点
+		TFTF_SetRect(uRow-d_thick,uCol-d_thick,thick,thick);
+		for(int i=0;i<thick*thick;i++)
+		{
+			TFTF_Pixel(color);
+		}
+		xerr += delta_x;
+		yerr += delta_y;
+		if (xerr > distance)
+		{
+			xerr -= distance;
+			uRow += incx;
+		}
+		if (yerr > distance)
+		{
+			yerr -= distance;
+			uCol += incy;
+		}
+	}
 }
 /**@brief  用于显示单色的图片		注:01 指的是只有0和1单色
   *@param  -位置和大小 			注:width建议8的整数倍
@@ -113,6 +179,9 @@ void TFTF_Pic565(uint16_t x,uint16_t y,const char* pic,uint16_t width,uint16_t h
 		//TFTF_Pixel( ( (pic[i]<<8)|pic[i+1] ) );
 	}
 }
+
+
+
 
 
 

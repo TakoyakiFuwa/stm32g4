@@ -97,7 +97,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   QY_Printf("Hello! \r\n");
   Init_TFT();
-  TFTF_Test();
+//  TFTF_Test();
   TFTT_Test();
 
   /* USER CODE END 2 */
@@ -109,7 +109,7 @@ int main(void)
     /* USER CODE END WHILE */
 	for(int i=0;;i++)
 	{
-		QY_Printf("正常运行:%d \r\n",i);
+//		QY_Printf("正常运行:%d \r\n",i);
 		HAL_Delay(1000);
 	}
     /* USER CODE BEGIN 3 */
