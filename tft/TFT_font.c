@@ -23,7 +23,7 @@
 #include "TFT_ILI9341.h"
 	//字体库
 #include "qy_font.h"
-#include "qy_pic.h"
+//#include "qy_pic.h"
 	//主要实现的两个内部用函数
 static void TFTF_SetRect(uint16_t x,uint16_t y,uint16_t width,uint16_t height)
 {
