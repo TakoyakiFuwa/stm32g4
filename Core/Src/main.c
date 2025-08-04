@@ -23,9 +23,7 @@
 #include "qy_printf.h"
 #include "TFT_ILI9341.h"
 #include "TFT_font.h"
-#include "TFT_text.h"
-//#include "qy_Graph.h"
-//#include "qy_Frame.h"
+#include "TFT_UI.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -97,8 +95,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   QY_Printf("Hello! \r\n");
   Init_TFT();
-//  TFTF_Test();
-  TFTT_Test();
+	TFTF_Test();
+	TFTU_Test();
 
   /* USER CODE END 2 */
 

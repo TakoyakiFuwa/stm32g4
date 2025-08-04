@@ -145,7 +145,6 @@ void TFTT_Test(void)
 	tftt_UI ui1 = TFTT_CreateUI_Template(10,20,0x64,0x69);
 	ui1.Func_Render(&ui1);
 	
-	
 	tftt_UI ui3 = TFTT_CreateUI_Template(200,120,0x64,0x69);
 	ui3.Func_Render(&ui3);
 	

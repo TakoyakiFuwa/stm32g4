@@ -1,14 +1,50 @@
 #include "qy_scanf.h"
 #include "qy_printf.h"
 #include "usart.h"
+#include "TFT_UI.h"
+#include "TFT_font.h"
 
 extern uint8_t buff;
+extern tftu_ui UI[10];
+extern tftu_pointer UI_CURSOR;
 
+uint8_t pointer_ui_index = 0;
 void QY_Scanf_Handler(UART_HandleTypeDef *huart)
 {
 	if(huart->Instance == USART1)//检测是否为USART1中断
 	{	
 		QY_Printf("%c",buff);
+		switch(buff)
+		{
+		case 'w':
+			UI_CURSOR.ptr_ui->Func_Event_UP(UI_CURSOR.ptr_ui);
+			QY_Printf("\r\n 'w'->上 \r\nuser:");
+			break;
+		case 's':
+			UI_CURSOR.ptr_ui->Func_Event_DOWN(UI_CURSOR.ptr_ui);
+			QY_Printf("\r\n 's'->下 \r\nuser:");
+			break;
+		case 'a':
+			UI_CURSOR.ptr_ui->Func_Event_LEFT(UI_CURSOR.ptr_ui);
+			QY_Printf("\r\n 'a'->左 \r\nuser:");
+			break;
+		case 'd':
+			UI_CURSOR.ptr_ui->Func_Event_RIGHT(UI_CURSOR.ptr_ui);
+			QY_Printf("\r\n 'd'->右 \r\nuser:");		
+			break;
+		case '\r':
+		case '\n':case 'Q':
+			UI_CURSOR.ptr_ui->Func_Event_Q(UI_CURSOR.ptr_ui);
+			QY_Printf("\r\n 'enter'/'Q'->确认 \r\nuser:");
+			break;
+		case 'F':
+			UI_CURSOR.ptr_ui->Func_Event_LEFT(UI_CURSOR.ptr_ui);
+			QY_Printf("\r\n 'F'->取消 \r\nuser:");
+			break;
+		default:
+			QY_Printf("\r\n 这里没有按键绑定 \r\nuser:");
+		}
+		
 		
 		//重新启用接受中断
 		
