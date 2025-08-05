@@ -24,6 +24,7 @@
 #include "TFT_ILI9341.h"
 #include "TFT_font.h"
 #include "TFT_UI.h"
+#include "UI_Instance_example.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -96,6 +97,8 @@ int main(void)
   QY_Printf("Hello! \r\n");
   Init_TFT();
 	TFTF_Test();
+	
+	INS_Test();
 	TFTU_Test();
 
   /* USER CODE END 2 */
@@ -105,11 +108,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	for(int i=0;;i++)
-	{
-//		QY_Printf("正常运行:%d \r\n",i);
-		HAL_Delay(1000);
-	}
+	  
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

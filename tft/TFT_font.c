@@ -148,9 +148,9 @@ void TFTF_DrawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2,uint16_t c
 /**@brief  创建一个字体
   *@param  - 字体参数
   */
-tftf_font TFTF_CreateFont(const char* font_lib,uint16_t height,uint16_t width,uint16_t ft_color,uint16_t bk_color)
+tft_font TFTF_CreateFont(const char* font_lib,uint16_t height,uint16_t width,uint16_t ft_color,uint16_t bk_color)
 {
-	tftf_font f;
+	tft_font f;
 	f.font_lib = font_lib;
 	f.size_height = height;
 	f.size_width = width;
@@ -162,7 +162,7 @@ tftf_font TFTF_CreateFont(const char* font_lib,uint16_t height,uint16_t width,ui
   *@param  x,y 坐标(左上角)
   *@param  pic01 图片内容
   */
-void TFTF_Single_01Pic(uint16_t x,uint16_t y,tftf_font pic01)
+void TFTF_Single_01Pic(uint16_t x,uint16_t y,tft_font pic01)
 {
 	TFTF_SetRect(x,y,pic01.size_width,pic01.size_height);
 	uint32_t a=pic01.size_width*pic01.size_height/8;
@@ -185,7 +185,7 @@ void TFTF_Single_01Pic(uint16_t x,uint16_t y,tftf_font pic01)
   *@param  x,y 坐标(左上角)
   *@param  pic565 图片内容
   */
-void TFTF_Single_595Pic(uint16_t x,uint16_t y,tftf_font pic565)
+void TFTF_Single_595Pic(uint16_t x,uint16_t y,tft_font pic565)
 {
 	TFTF_SetRect(x,y,pic565.size_width,pic565.size_height);
 	uint32_t a=pic565.size_width*pic565.size_height*2;
@@ -201,7 +201,7 @@ void TFTF_Single_595Pic(uint16_t x,uint16_t y,tftf_font pic565)
   *@param	_char 	要显示的字符
   *@param  font		字体
   */
-void TFTF_Single_Char(uint16_t x,uint16_t y,char _char,tftf_font font)
+void TFTF_Single_Char(uint16_t x,uint16_t y,char _char,tft_font font)
 {
 	TFTF_SetRect(x,y,font.size_width,font.size_height);
 	uint32_t a=font.size_width*font.size_height/8;
@@ -228,7 +228,7 @@ void TFTF_Single_Char(uint16_t x,uint16_t y,char _char,tftf_font font)
  *@param  -
  *@param  digits  显示的位数，超过位数会吞掉低位
  */
-void TFTF_ShowNum(uint16_t x,uint16_t y,uint32_t num,tftf_font font,int8_t digits)
+void TFTF_ShowNum(uint16_t x,uint16_t y,uint32_t num,tft_font font,int8_t digits)
 {
 	uint32_t num_length = 1;
 	int8_t overflow_digits = digits;
@@ -260,7 +260,7 @@ void TFTF_ShowNum(uint16_t x,uint16_t y,uint32_t num,tftf_font font,int8_t digit
  *@param  -
  *@param  NumOfChar  显示的数量
  */
-void TFTF_ShowString(uint16_t x,uint16_t y,const char* text,tftf_font font,int8_t NumOfChar)
+void TFTF_ShowString(uint16_t x,uint16_t y,const char* text,tft_font font,int8_t NumOfChar)
 {
 	int i=0;
 	for(;text[i]!='\0';i++)
@@ -285,7 +285,7 @@ void TFTF_ShowString(uint16_t x,uint16_t y,const char* text,tftf_font font,int8_
   */
 void TFTF_Test(void)
 {
-	tftf_font f;
+	tft_font f;
 	f.font_lib = (const char*)font_ASCII_PIXEL_3216;
 	f.size_width = 16;
 	f.size_height = 32;

@@ -3,10 +3,12 @@
 #include "usart.h"
 #include "TFT_UI.h"
 #include "TFT_font.h"
+#include "UI_Instance_example.h"
 
 extern uint8_t buff;
-extern tftu_ui UI[10];
-extern tftu_pointer UI_CURSOR;
+extern tft_ui UI[10];
+extern tft_pointer UI_CURSOR;
+extern tft_page 	PAGE[20];
 
 uint8_t pointer_ui_index = 0;
 void QY_Scanf_Handler(UART_HandleTypeDef *huart)
@@ -33,13 +35,14 @@ void QY_Scanf_Handler(UART_HandleTypeDef *huart)
 			QY_Printf("\r\n 'd'->右 \r\nuser:");		
 			break;
 		case '\r':
-		case '\n':case 'Q':
+		case '\n':case 'q':
 			UI_CURSOR.ptr_ui->Func_Event_Q(UI_CURSOR.ptr_ui);
 			QY_Printf("\r\n 'enter'/'Q'->确认 \r\nuser:");
 			break;
-		case 'F':
-			UI_CURSOR.ptr_ui->Func_Event_LEFT(UI_CURSOR.ptr_ui);
-			QY_Printf("\r\n 'F'->取消 \r\nuser:");
+		case 'f':
+			UI_CURSOR.ptr_ui->Func_Event_F(UI_CURSOR.ptr_ui);
+			QY_Printf("\r\n 'F'->进入颜色配置 \r\nuser:");
+			INS_EnterColorChange();
 			break;
 		default:
 			QY_Printf("\r\n 这里没有按键绑定 \r\nuser:");
