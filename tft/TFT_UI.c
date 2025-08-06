@@ -80,7 +80,9 @@ void Init_UI(void)
 /**@brief  具体的渲染函数，用于向屏幕输出
   *@param  void
   *@retval void
-  *@add    放在循环中或者定时器定时调用，tft_ui.Func_Render_N只在这里和Page_Change中出现
+  *@add    放在循环中或者定时器定时调用，tft_ui.Func_Render_N只在这里直接调用
+  *@add	   如果被UI_ChangePage中断打断有可能出现显示bug
+  *		   如果真的有用UI_ChangePage中断打断CircleRender_UI的需求，提醒我再改一下
   */
 void CircleRender_UI(void)
 {
@@ -243,6 +245,7 @@ void UI_ChangePage(tft_page* new_page)
 		}
 		UI[new_page->ui_index[i]].is_present = 1;
 		UI[new_page->ui_index[i]].readyto_present = 0;
+		UI_AddRender(&UI[new_page->ui_index[i]]);
 	}
 	//渲染本页面的ui
 	for(int i=0;i<100;i++)
@@ -251,7 +254,6 @@ void UI_ChangePage(tft_page* new_page)
 		{
 			break;
 		}
-		UI_AddRender(&UI[new_page->ui_index[i]]);
 	}
 	//绑定指针
 	UI_Cursor_ChangeUI(new_page->start_ui);
