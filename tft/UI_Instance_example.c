@@ -31,7 +31,6 @@ extern const char qyf_pic595_bing_6432[4096];				//微软图标		彩色	64*32
 
 //颜色修改面板的page/ui缓冲区
 tft_page* page_color_changed 	= &PAGE[0];
-tft_ui*	  ui_color_changed 		= &UI[0];
 
 /*关于font
  *	0	光标
@@ -49,6 +48,9 @@ tft_ui*	  ui_color_changed 		= &UI[0];
  *	84	时/分：
  *	85	分/秒：
  *	86	秒/毫秒
+ */
+/*
+ *
  */
 /*关于UI 想在中间插入很难做 应该把这些做成宏定义或者变量
  *	0	光标
@@ -80,6 +82,15 @@ tft_ui*	  ui_color_changed 		= &UI[0];
  *	26	颜色确认					T 重新刷新当前页，并跳出颜色栏
  *	27	颜色取消					F 重新刷新当前页，并跳出颜色栏
  *	28	退出颜色配置
+ *	29	RGB888输入		0x	//6位数字
+ *	30					0
+ *	31					1
+ *	32					2
+ *	33					3
+ *	34					4
+ *	35					5
+ *	36					T	确定
+ *	37					F	取消
  *
  *	......
  *
@@ -159,7 +170,7 @@ void Render_Page0(void)
 }
 void Render_Page1(void)
 {
-	
+	TFTF_DrawRect(UI[1].x,UI[1].y,320,50,0xad55);
 }
 	
 	/*  按键监听部分  */
@@ -205,6 +216,11 @@ void RIGHT_UI6(tft_ui* u)
 uint8_t color_type_index = 4;
 void UP_ColorBlock(tft_ui* u)
 {//UI[7~16],向上跳转到FT/BK(menu)
+	for(int i=4;i<=6;i++)
+	{
+		UI[i].font = &FONT[1];
+		UI_AddRender(&UI[i]);
+	}
 	UI_Cursor_ChangeUI(&UI[color_type_index]);
 }
 void DOWN_ColorMenu(tft_ui* u)
@@ -261,16 +277,16 @@ void DOWN_ColorBlock(tft_ui* u)
 	if(color_type_index==4)
 	{
 		UI[2].font->ft_color = u->parameter;
-		ui_color_changed->font->ft_color = u->parameter;
+		UI_CURSOR.temp_ui->font->ft_color = u->parameter;
 	}
 	else if(color_type_index==5)
 	{
 		UI[2].font->bk_color = u->parameter;
-		ui_color_changed->font->bk_color = u->parameter;
+		UI_CURSOR.temp_ui->font->bk_color = u->parameter;
 	}
 	UI_AddRender(&UI[2]);
 	UI_AddRender(UI_CURSOR.ptr_ui);
-	UI_AddRender(ui_color_changed);
+	UI_AddRender(UI_CURSOR.temp_ui);
 }
 
 //时钟页面测试
@@ -370,7 +386,7 @@ tft_font* INS_Init_UI(void)
 	UI[3].parameter = 10;
 	INS_StringCpy(UI[3].value_text,"UI_NOTES");
 	//	4	颜色框-前景色		//front 36*24 下键选中固定颜色0 左键选中示例图片/数字 右键选中前景色 
-	UI[4] = UI_CreateUI(SCREEN_WIDTH-36*4,1,&FONT[2],Render_TEXT);
+	UI[4] = UI_CreateUI(SCREEN_WIDTH-36*4,1,&FONT[1],Render_TEXT);
 	UI[4].parameter = 2;
 	INS_StringCpy(UI[4].value_text,"ft");
 	//	5	颜色框-背景色		//back_ 36*24 下键选中固定颜色0	左键选中前景色 右键选中字体并换成字体选择UI
@@ -486,9 +502,10 @@ tft_page* INS_Init_Page(void)
 void INS_EnterColorChange(void)
 {//打开颜色选择面板
 	page_color_changed = UI_CURSOR.ptr_page;
-	ui_color_changed = UI_CURSOR.ptr_ui;
-	UI[2].font->bk_color = ui_color_changed->font->bk_color;
-	UI[2].font->ft_color = ui_color_changed->font->ft_color;
+	color_type_index = 4;
+	UI_CURSOR.temp_ui = UI_CURSOR.ptr_ui;
+	UI[2].font->bk_color = UI_CURSOR.temp_font->bk_color;
+	UI[2].font->ft_color = UI_CURSOR.temp_font->ft_color;
 	UI_ChangePage(&PAGE[0]);
 	for(int i=0;i<100;i++)
 	{
@@ -497,11 +514,20 @@ void INS_EnterColorChange(void)
 			break;
 		}
 		UI[page_color_changed->ui_index[i]].is_present = 1;
-		
 	}
+	UI_AddRender(UI_CURSOR.temp_ui);
 }
 void INS_ExitColorChange(void)
 {
+	for(int i=0;i<100;i++)
+	{
+		if(page_color_changed->ui_index[i]==999)
+		{
+			break;
+		}
+		UI[page_color_changed->ui_index[i]].is_present = 0;
+		UI[page_color_changed->ui_index[i]].readyto_present = 0;
+	}
 	UI_ChangePage(page_color_changed);
 }
 

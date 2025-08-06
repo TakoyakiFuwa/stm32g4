@@ -9,10 +9,14 @@ extern const char font_ASCII_PIXEL_3216[][64];
 
 /*  全局变量  */
 //关于渲染队列，不用于接口，不需要使用
-tft_ui* UI_RENDER_QUEUE[200];	//UI渲染队列 200算是渲染缓冲区大小，
+//UI渲染队列
+tft_ui* QUEUE_RENDER_UI[200];	//渲染UI队列 200算是渲染缓冲区大小，
 								//更改时应该同时更改UI_Init"创建渲染队列"中for循环的数量
-uint16_t ui_render_index;		//渲染队列队尾(可添加渲染的位置)
-tft_ui	 null_ui_render_queue;	//用于表示UI渲染的队列尾，变相实现空指针
+uint16_t queue_render_ui_index=0;		//渲染队列队尾(可添加渲染的位置)
+tft_ui	 null_ui;	//用于表示UI渲染的队列尾，变相实现空指针,is_present=100 表示空
+//渲染函数队列，仅用于页面刷新时将页面刷新函数放进渲染队列中
+void (*QUEUE_RENDER_FUNC[100])(void);	//渲染函数队列
+uint16_t queue_render_func_index=0;
 
 //光标，项目中用到的全部字体/UI/页面
 tft_pointer UI_CURSOR;				//光标
@@ -23,14 +27,14 @@ tft_page 	PAGE[20];				//页面
 /**@brief  用于充当函数指针的空指针
   *@add    避免程序调用的函数是空的导致异常
   *		   NULL
-  *		   如果ui对象的交互接口不绑定特定的函数
-  *		   会异常卡死(程序跑飞)
-  *		   所以在创建函数中除了一定绑定的渲染函数
-  *		   会把这个函数塞到UI对象的接口上
   */
 void NULL_UI_Func(struct tft_ui* none)
 {
 	QY_Printf("\r\n 警告！当前UI对象没有绑定该操作函数 \r\n");
+}
+void NULL_VOID_Func(void)
+{
+	QY_Printf("\r\n 警告！调用空函数指针 \r\n");
 }
 /**@brief  UI初始化，需要放在循环前(常规初始化位置就可以)
   *@param  void
@@ -45,14 +49,21 @@ void Init_UI(void)
 	UI_CURSOR.ptr_page = INS_Init_Page();
 	//创建光标
 	UI_CURSOR.ptr_ui = UI_CURSOR.ptr_page->start_ui;
-	UI_CURSOR.index_ofUI = 0;	//感觉不太对劲，这个在测试完后记得删
 	UI_CURSOR.temp_font = UI_CURSOR.ptr_page->start_ui->font;
+	UI_CURSOR.parameter = 0;
+	UI_CURSOR.temp_ui = UI_CURSOR.ptr_ui;
 	//创建渲染队列
-	null_ui_render_queue = UI_CreateUI(0,0,&FONT[0],NULL_UI_Func);
-	null_ui_render_queue.is_present = 100;	//作为渲染队列尾的标志位
+		//函数渲染
+	for(int i=0;i<100;i++)
+	{
+		QUEUE_RENDER_FUNC[i] = NULL_VOID_Func;
+	}
+		//UI渲染
+	null_ui = UI_CreateUI(0,0,&FONT[0],NULL_UI_Func);
+	null_ui.is_present = 100;	//作为渲染队列尾的标志位
 	for(int i=0;i<200;i++)
 	{
-		UI_RENDER_QUEUE[i] = &null_ui_render_queue;
+		QUEUE_RENDER_UI[i] = &null_ui;
 	}
 	//第一次渲染
 	UI_ChangePage(UI_CURSOR.ptr_page);
@@ -64,18 +75,30 @@ void Init_UI(void)
   */
 void CircleRender_UI(void)
 {
-	for(int i=0;i<100;i++)
+	//遍历函数渲染队列
+	for(int i=0;QUEUE_RENDER_FUNC[i]!=NULL_VOID_Func;i++)
 	{
-		if(UI_RENDER_QUEUE[i]->is_present==100)//遍历到队列尾，退出
+		if(i>=100)
 		{
 			break;
 		}
-		UI_RENDER_QUEUE[i]->Func_Render_N(UI_RENDER_QUEUE[i]);
-		UI_RENDER_QUEUE[i]->readyto_present = 0;	//本次渲染结束，下次可继续添加到渲染队列
-		
-		UI_RENDER_QUEUE[i] = &null_ui_render_queue;
+		QUEUE_RENDER_FUNC[i]();
+		QUEUE_RENDER_FUNC[i] = NULL_VOID_Func;
 	}
-	ui_render_index = 0;
+	queue_render_func_index = 0;
+	//遍历UI渲染队列
+	for(int i=0;i<200;i++)
+	{
+		if(QUEUE_RENDER_UI[i]->is_present==100)//遍历到队列尾，退出
+		{
+			break;
+		}
+		QUEUE_RENDER_UI[i]->Func_Render_N(QUEUE_RENDER_UI[i]);
+		QUEUE_RENDER_UI[i]->readyto_present = 0;	//本次渲染结束，下次可继续添加到渲染队列
+		
+		QUEUE_RENDER_UI[i] = &null_ui;
+	}
+	queue_render_ui_index = 0;
 }
 /**@brief  将一个UI添加到渲染队列中
   *@param  u	要渲染的UI
@@ -86,11 +109,11 @@ void UI_AddRender(tft_ui* u)
 {
 	if(u->is_present==1&&u->readyto_present!=1)
 	{
-		UI_RENDER_QUEUE[ui_render_index] = u;	//将该UI添加到渲染队列
+		QUEUE_RENDER_UI[queue_render_ui_index] = u;	//将该UI添加到渲染队列
 		u->readyto_present = 1;					//UI的准备渲染标志位换成1
 												//再次对该UI调用"添加到队列"函数时无效，可避免重复渲染
 
-		ui_render_index++;						//队尾向后移动
+		queue_render_ui_index++;						//队尾向后移动
 	}
 }
 /**@brief  创建一个UI
@@ -193,24 +216,15 @@ void UI_ChangePage(tft_page* new_page)
 	//清理循环渲染队列
 	for(int i=0;i<200;i++)
 	{
-		if(UI_RENDER_QUEUE[i]->is_present==100)
+		if(QUEUE_RENDER_UI[i]->is_present==100)
 		{//遍历到队列尾，退出
 			break;
 		}
-		UI_RENDER_QUEUE[i] =  &null_ui_render_queue;
-		ui_render_index = 0;
+		QUEUE_RENDER_UI[i] =  &null_ui;
+		queue_render_ui_index = 0;
 	}
 	//固定内容渲染
-	new_page->Page_Render_N();
-	//渲染本页面的ui
-	for(int i=0;i<100;i++)
-	{
-		if(new_page->ui_index[i]==999)
-		{
-			break;
-		}
-		UI[new_page->ui_index[i]].Func_Render_N(&UI[new_page->ui_index[i]]);
-	}
+	QUEUE_RENDER_FUNC[queue_render_func_index++] = new_page->Page_Render_N;
 	//将本页面ui.ispresent=1,readyto_present=0
 	for(int i=0;i<100;i++)
 	{
@@ -220,6 +234,15 @@ void UI_ChangePage(tft_page* new_page)
 		}
 		UI[new_page->ui_index[i]].is_present = 1;
 		UI[new_page->ui_index[i]].readyto_present = 0;
+	}
+	//渲染本页面的ui
+	for(int i=0;i<100;i++)
+	{
+		if(new_page->ui_index[i]==999)
+		{
+			break;
+		}
+		UI_AddRender(&UI[new_page->ui_index[i]]);
 	}
 	//绑定指针
 	UI_Cursor_ChangeUI(new_page->start_ui);
@@ -233,118 +256,6 @@ void UI_ChangePage(tft_page* new_page)
 
 
 
-
-
-//下面进行测试
-void Clock_Num_Render(tft_ui* u)
-{
-	TFTF_ShowNum(u->x,u->y,u->value_num,*u->font,2);
-}
-void Clock_Num_Add1(tft_ui* u)
-{
-	u->value_num += 1;
-	UI_Cursor_Refresh();
-}
-void Clock_Num_Mul1(tft_ui* u)
-{
-	u->value_num -= 1;
-	UI_Cursor_Refresh();
-}
-void Clock_Left(tft_ui* u)
-{
-	if(UI_CURSOR.index_ofUI==0)
-	{
-		UI_CURSOR.index_ofUI = 3;
-	}
-	UI_CURSOR.index_ofUI--;
-	UI_Cursor_ChangeUI(&UI[UI_CURSOR.index_ofUI]);
-}
-void Clock_Right(tft_ui* u)
-{
-	if(++UI_CURSOR.index_ofUI>=3)
-	{
-		UI_CURSOR.index_ofUI = 0;
-	}
-	UI_Cursor_ChangeUI(&UI[UI_CURSOR.index_ofUI]);
-}
-uint8_t timer;
-void Clock_Test(void)
-{
-	if(++UI[2].value_num>=100)
-	{
-		UI[2].value_num = 0;
-		if(++UI[1].value_num>=60)
-		{
-			UI[1].value_num = 0;
-			++UI[0].value_num;
-			UI_AddRender(&UI[0]);
-		}
-		UI_AddRender(&UI[1]);
-	}
-	UI_AddRender(&UI[2]);
-}
-
-void Init_Interface(void)
-{
-	null_ui_render_queue = UI_CreateUI(0,0,&FONT[0],NULL_UI_Func);
-	null_ui_render_queue.is_present = 100;	//作为渲染队列尾的标志位
-	for(int i=0;i<200;i++)
-	{
-		UI_RENDER_QUEUE[i] = &null_ui_render_queue;
-	}
-	//创建秒表
-	FONT[0] = TFTF_CreateFont((const char*)font_ASCII_PIXEL_3216 ,32,16,0,COLOR_GREEN);
-	FONT[1] = TFTF_CreateFont((const char*)font_ASCII_PIXEL_3216 ,32,16,0,COLOR_GREEN);
-	FONT[2] = TFTF_CreateFont((const char*)font_ASCII_PIXEL_3216 ,32,16,0,COLOR_GREEN);
-	FONT[3] = TFTF_CreateFont((const char*)font_ASCII_PIXEL_3216 ,32,16,0,COLOR_GREEN);
-	
-	UI[0] = UI_CreateUI(10,45,&FONT[0],Clock_Num_Render);
-	UI[0].value_num = 0;
-	UI[1] = UI_CreateUI(10+48,45,&FONT[1],Clock_Num_Render);
-	UI[1].value_num = 0;
-	UI[2] = UI_CreateUI(10+96,45,&FONT[2],Clock_Num_Render);
-	UI[2].value_num = 0;
-	for(int i=0;i<3;i++)
-	{
-		UI[i].Func_Event_UP = Clock_Num_Add1;
-		UI[i].Func_Event_DOWN = Clock_Num_Mul1;
-		UI[i].Func_Event_LEFT = Clock_Left;
-		UI[i].Func_Event_RIGHT = Clock_Right;
-	}
-	//创建光标
-	FONT[4] = TFTF_CreateFont((const char*)font_ASCII_PIXEL_3216,32,16,COLOR_RED,COLOR_YELLOW);
-	UI_CURSOR.cursor_font = &FONT[4];
-	UI_CURSOR.ptr_ui = &UI[0];
-	UI_CURSOR.temp_font = UI[0].font;
-	UI_CURSOR.index_ofUI = 0;
-}
-//测试时把这个当作main函数
-void TFTU_Test(void)
-{
-	//UI初始化
-//	Init_UI();
-	//创建接口
-	Init_Interface();
-	//添加到显示（之后做成页面）
-		//页面初始化/切换时，先清理循环渲染队列
-		//然后在初始化/切换函数中直接渲染到屏幕
-		//即，将上一个页面的ui.ispresent=0,readyto_present=0 -> 清理循环渲染队列 -> 渲染本页面的ui ->将本页面ui.ispresent = 1,readyto_present=0
-	TFTF_Single_Char(10+32,45,':',FONT[3]);
-	TFTF_Single_Char(10+80,45,':',FONT[3]);
-	for(int i=0;i<3;i++)
-	{
-		UI[i].Func_Render_N(&UI[i]);
-		UI[i].is_present = 1;
-	}
-	UI_Cursor_ChangeUI(&UI[0]);
-	UI_Cursor_Refresh();
-	while(1)
-	{
-		Clock_Test();
-		HAL_Delay(10);
-		CircleRender_UI();
-	}	
-}
 
 
 

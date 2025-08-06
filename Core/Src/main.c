@@ -99,7 +99,6 @@ int main(void)
 	TFTF_Test();
 	
 	INS_Test();
-	TFTU_Test();
 
   /* USER CODE END 2 */
 

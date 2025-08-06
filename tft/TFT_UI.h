@@ -64,7 +64,8 @@ typedef struct tft_pointer{
 	tft_ui* 	ptr_ui;			//光标所在的UI
 	tft_font* 	cursor_font;	//光标的字体
 	tft_font* 	temp_font;		//暂时保存的字体，光标离开时返回到UI
-	uint16_t 	index_ofUI;		//光标所在UI的下标 同tft_ui中的parameter属性，考虑删
+	tft_ui*		temp_ui;		//光标所在UI关联的UI,类似tft_ui.parameter的作用
+	uint16_t 	parameter;		//在UI的操作函数中灵活使用
 }tft_pointer;
 //
 
