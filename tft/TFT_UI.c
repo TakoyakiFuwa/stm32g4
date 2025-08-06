@@ -1,13 +1,27 @@
 #include "TFT_UI.h"
 #include "TFT_font.h"		//提供字体结构体，不可删
-#include "UI_Instance_example.h"	//实例化接口，不可删
-#include "TFT_ILI9341.h"	//提供COLOR		可删
-#include "qy_printf.h"		//提供QY_Printf	可删
+#include "qy_printf.h"		//提供QY_Printf	用于串口调试
+#include "UI_Instance_example.h"	//"Instance"实例化 提供INS_Init_UI()和INS_Init_Page()
+									//example表示只是提供参考例程，真正项目应该创建UI_Instance.h/c(UI实例化)文件
 
-/*  用到的字库  */
-extern const char font_ASCII_PIXEL_3216[][64];
+//
+/*	在TFT_font中的基础上实现了渲染框架的搭建
+ *	参考面向对象的方式，创建了 page 和 UI 作为"class"类
+ *	通过调用 UI_Create- 来实现实例化	
+ *	
+ *	与TFT_font的耦合性其实较低，只用到了tft_font
+ *	考虑有机会进一步降耦合
+ *			——2025/8/6-9:22.秦羽
+ */
 
 /*  全局变量  */
+//光标，项目中用到的全部字体/UI/页面
+tft_pointer UI_CURSOR;				//光标
+tft_font 	FONT[100];				//字体
+tft_ui 		UI[100];				//UI
+tft_page 	PAGE[20];				//页面
+
+/*  渲染队列  */
 //关于渲染队列，不用于接口，不需要使用
 //UI渲染队列
 tft_ui* QUEUE_RENDER_UI[200];	//渲染UI队列 200算是渲染缓冲区大小，
@@ -18,12 +32,7 @@ tft_ui	 null_ui;	//用于表示UI渲染的队列尾，变相实现空指针,is_p
 void (*QUEUE_RENDER_FUNC[100])(void);	//渲染函数队列
 uint16_t queue_render_func_index=0;
 
-//光标，项目中用到的全部字体/UI/页面
-tft_pointer UI_CURSOR;				//光标
-tft_font 	FONT[100];				//字体
-tft_ui 		UI[100];				//UI
-tft_page 	PAGE[20];				//页面
-
+/*  函数  */
 /**@brief  用于充当函数指针的空指针
   *@add    避免程序调用的函数是空的导致异常
   *		   NULL
@@ -223,7 +232,7 @@ void UI_ChangePage(tft_page* new_page)
 		QUEUE_RENDER_UI[i] =  &null_ui;
 		queue_render_ui_index = 0;
 	}
-	//固定内容渲染
+	//固定内容渲染（将页面渲染函数添加到渲染队列）
 	QUEUE_RENDER_FUNC[queue_render_func_index++] = new_page->Page_Render_N;
 	//将本页面ui.ispresent=1,readyto_present=0
 	for(int i=0;i<100;i++)
