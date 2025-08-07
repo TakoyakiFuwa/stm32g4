@@ -14,10 +14,11 @@
  *			——2025/8/6-9:22.秦羽
  */
 
+extern const char font_ASCII_PIXEL_4020[][100];
 /*  全局变量  */
 //光标，项目中用到的全部字体/UI/页面
 tft_pointer UI_CURSOR;				//光标
-tft_font 	FONT[100];				//字体
+tft_font 	FONT[300];				//字体
 tft_ui 		UI[100];				//UI
 tft_page 	PAGE[20];				//页面
 
@@ -27,7 +28,8 @@ tft_page 	PAGE[20];				//页面
 tft_ui* QUEUE_RENDER_UI[200];	//渲染UI队列 200算是渲染缓冲区大小，
 								//更改时应该同时更改UI_Init"创建渲染队列"中for循环的数量
 uint16_t queue_render_ui_index=0;		//渲染队列队尾(可添加渲染的位置)
-tft_ui	 null_ui;	//用于表示UI渲染的队列尾，变相实现空指针,is_present=100 表示空
+tft_ui	 	null_ui;	//用于表示UI渲染的队列尾，变相实现空指针,is_present=100 表示空
+tft_font	null_font;	//表示未绑定font size_width=size_height = 999;
 //渲染函数队列，仅用于页面刷新时将页面刷新函数放进渲染队列中
 void (*QUEUE_RENDER_FUNC[100])(void);	//渲染函数队列
 uint16_t queue_render_func_index=0;
@@ -45,6 +47,18 @@ void NULL_VOID_Func(void)
 {
 	QY_Printf("\r\n 警告！调用空函数指针 \r\n");
 }
+void NULL_ChangeState(struct tft_ui* u,int8_t state)
+{
+	if(state<0||state>=4)
+	{
+//		QY_Printf("\r\n 当前UI进入异常状态 \r\n");
+		return;
+	}
+	if(u->font!=UI_CURSOR.cursor_font)
+	{
+		u->font = u->d_font[state];
+	}
+}
 /**@brief  UI初始化，需要放在循环前(常规初始化位置就可以)
   *@param  void
   *@retval void
@@ -52,6 +66,10 @@ void NULL_VOID_Func(void)
   */
 void Init_UI(void)
 {
+	//创建充当"空指针"的内容
+	null_ui = UI_CreateUI(0,0,&FONT[0],NULL_UI_Func);
+	null_ui.is_present = 100;	//作为渲染队列尾的标志位
+	null_font = TFTF_CreateFont((const char*)font_ASCII_PIXEL_4020,999,999,0,0);
 	//UI创建接口
 	UI_CURSOR.cursor_font = INS_Init_UI();
 	//页面创建接口
@@ -68,8 +86,6 @@ void Init_UI(void)
 		QUEUE_RENDER_FUNC[i] = NULL_VOID_Func;
 	}
 		//UI渲染
-	null_ui = UI_CreateUI(0,0,&FONT[0],NULL_UI_Func);
-	null_ui.is_present = 100;	//作为渲染队列尾的标志位
 	for(int i=0;i<200;i++)
 	{
 		QUEUE_RENDER_UI[i] = &null_ui;
@@ -84,8 +100,10 @@ void Init_UI(void)
   *@add	   如果被UI_ChangePage中断打断有可能出现显示bug
   *		   如果真的有用UI_ChangePage中断打断CircleRender_UI的需求，提醒我再改一下
   */
+int bug_Bad_solution = 1;
 void CircleRender_UI(void)
 {
+	bug_Bad_solution = 1;
 	//遍历函数渲染队列
 	for(int i=0;QUEUE_RENDER_FUNC[i]!=NULL_VOID_Func;i++)
 	{
@@ -100,7 +118,7 @@ void CircleRender_UI(void)
 	//遍历UI渲染队列
 	for(int i=0;i<200;i++)
 	{
-		if(QUEUE_RENDER_UI[i]->is_present==100)//遍历到队列尾，退出
+		if(QUEUE_RENDER_UI[i]->is_present==100 || bug_Bad_solution==0)//遍历到队列尾，退出
 		{
 			break;
 		}
@@ -138,18 +156,24 @@ tft_ui UI_CreateUI(uint16_t x,uint16_t y,tft_font* font,void (*Func_Render)(stru
 	tft_ui u;
 	u.x = x;
 	u.y = y;
-	u.parameter = 0;
 	u.font = font;
 	u.readyto_present = 0;
 	u.is_present = 0;
 	u.Func_Render_N = Func_Render;
 	//绑定空操作函数
+	u.Func_ChangeState 	= NULL_ChangeState;
+	u.Func_StateRule	= NULL_UI_Func;
 	u.Func_Event_UP 	= NULL_UI_Func;
 	u.Func_Event_DOWN 	= NULL_UI_Func;
 	u.Func_Event_LEFT 	= NULL_UI_Func;
 	u.Func_Event_RIGHT 	= NULL_UI_Func;
 	u.Func_Event_F		= NULL_UI_Func;
-	u.Func_Event_Q		= NULL_UI_Func;
+	//不一定会用上，后续补充内容
+	u.parameter = 0;
+	for(int i=0;i<=3;i++)
+	{
+		u.d_font[i] = font;
+	}
 	
 	return u;
 }
@@ -258,6 +282,7 @@ void UI_ChangePage(tft_page* new_page)
 	//绑定指针
 	UI_Cursor_ChangeUI(new_page->start_ui);
 	UI_CURSOR.ptr_page = new_page;
+	bug_Bad_solution = 0;
 }
 
 

@@ -22,6 +22,7 @@ typedef struct tft_ui{
 	uint16_t 	x;
 	uint16_t 	y;
 	tft_font* 	font;
+	tft_font*	d_font[4];				//不同状态下的字体
 	int8_t 		is_present;			//是否显示
 	int8_t		readyto_present;	//判断是否已经在显示队列中,避免重复添加
 	char		notes[20];			//备注
@@ -52,12 +53,15 @@ typedef struct tft_ui{
 	//以下是用户交互函数，应当绑定具体按键（按键监听处理）
 	//注意，	扩展时应当在UI_CreateUI中添加 = NULL_UI_Func
 	//		原因参考NULL_UI_Func
-	void (*Func_Event_UP)(struct tft_ui* self);	//上移
+	void (*Func_ChangeState)(struct tft_ui* self,int8_t state);//更改当前状态
+	void (*Func_StateRule)(struct tft_ui* self);	//检查自身状态并适配
+													//UI的状态可能和某些值相关联，可能会发生修改值
+													
+	void (*Func_Event_UP)(struct tft_ui* self);		//上移
 	void (*Func_Event_DOWN)(struct tft_ui* self);	//下移
 	void (*Func_Event_LEFT)(struct tft_ui* self);	//左移
 	void (*Func_Event_RIGHT)(struct tft_ui* self);	//右移
 	void (*Func_Event_F)(struct tft_ui* self);		//确认	(更换颜色)
-	void (*Func_Event_Q)(struct tft_ui* self);		//退出
 }tft_ui;
 //光标，结构体不复用，仅实例化一个光标
 typedef struct tft_pointer{
@@ -78,6 +82,7 @@ extern tft_page 	PAGE[20];				//页面
  */
 
 /*  UI相关函数  */
+void NULL_ChangeState(struct tft_ui* u,int8_t state);
 void 	NULL_UI_Func(struct tft_ui* none);
 void 	NULL_VOID_Func(void);
 void 	Init_UI(void);

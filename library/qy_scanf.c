@@ -35,13 +35,12 @@ void QY_Scanf_Handler(UART_HandleTypeDef *huart)
 			QY_Printf("\r\n 'd'->右 \r\nuser:");		
 			break;
 		case '\r':
-		case '\n':case 'q':
-			UI_CURSOR.ptr_ui->Func_Event_Q(UI_CURSOR.ptr_ui);
-			QY_Printf("\r\n 'enter'/'Q'->确认 \r\nuser:");
-			break;
-		case 'f':
+		case '\n':case 'f':
 			UI_CURSOR.ptr_ui->Func_Event_F(UI_CURSOR.ptr_ui);
-			QY_Printf("\r\n 'F'->进入颜色配置 \r\nuser:");
+			QY_Printf("\r\n 'enter'/'f'-> \r\nuser:");
+			break;
+		case 'q':
+			QY_Printf("\r\n 'q'->进入颜色配置 \r\nuser:");
 			INS_EnterColorChange();
 			break;
 		default:

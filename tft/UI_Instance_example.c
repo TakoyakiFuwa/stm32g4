@@ -4,9 +4,16 @@
 #include "TFT_ILI9341.h"
 #include "qy_printf.h"
 
+/*	这个文件的很多内容相当于"搭积木"
+ *	代码或者函数大多和屏幕上某个UI绑定，
+ *	不需要后续使用
+ *	所以就不写注释了
+ *			——2025/8/6-17:50.秦羽
+ */
+
 //来自TFT_UI.h
 extern tft_pointer 	UI_CURSOR;				//光标
-extern tft_font 	FONT[100];				//字体
+extern tft_font 	FONT[300];				//字体
 extern tft_ui 		UI[100];				//UI
 extern tft_page 	PAGE[20];				//页面
 //字体
@@ -29,8 +36,11 @@ extern const char qyf_pic595_bing_6432[4096];				//微软图标		彩色	64*32
 #define SCREEN_WIDTH 	320
 #define SCREEN_HEIGHT 	240
 
-//颜色修改面板的page/ui缓冲区
-tft_page* page_color_changed 	= &PAGE[0];
+/*  全局变量  */
+	//颜色修改面板的page缓冲区
+tft_page* color_changed_page 	= &PAGE[0];
+	//当前修改的颜色处于哪种状态
+int8_t 	  color_changed_state 	= 0;
 
 /*关于font
  *	0	光标
@@ -55,53 +65,36 @@ tft_page* page_color_changed 	= &PAGE[0];
 #define		InUI_Cursor			0
 #define 	InUI_ColorBox		1		//不会被光标选中					51*WIDTH 	是更改颜色的界面  
 #define 	InUI_CB_Sample		2		//调色框中最左侧的样本图片  		51*51		是颜色示例
-#define 	InUI_CB_UIIndex		3		//调色框第一行的UI的下标			36*24		要更改的UI的下标	右键进入前景色 上下键更改当前要修改的UI
-#define 	InUI_CB_Type_FT		4		//调色框第一行"FT" front前景色	60*24 		下键选中固定颜色0 左键选中示例图片/数字 右键选中背景色 
-#define 	InUI_CB_Type_BK		5		//调色框第一行"BK" back背景色		60*24 		下键选中固定颜色0	左键选中前景色 右键选中字体并换成字体选择UI
-#define 	InUI_CB_Type_F_		6		//调色框第一行"F_" font字体		60*24 		下键选中字体选择	左键选中背景色并换成颜色框UI
-#define     InUI_CB_Type_Q_		7		//调色框第一行"Q_" 退出			60*24		下键退出并重新刷新当前页 左键返回F_
-#define 	InUI_CB_ColorFix0	8		//调色框第二行固定颜色0~7			28*24 		上键返回前景色/背景色 左键UI_index-1 右键UI_index+1 下键确认
-#define 	InUI_CB_ColorFix1	9				//颜色值保存在parameter中
-#define 	InUI_CB_ColorFix2	10	
-#define 	InUI_CB_ColorFix3	11	
-#define 	InUI_CB_ColorFix4	12	
-#define 	InUI_CB_ColorFix5	13		
-#define 	InUI_CB_ColorFix6	14		
-#define 	InUI_CB_ColorFix7	15		
-#define     InUI_CB_ColorUS		16		//调色框第二行倒数第二个UnSure	16*16		下键进入RGB888输入框
-#define     InUI_CB_ColorOld	17		//调色框第二行，保存字体之前的颜色	16*16	
-#define		InUI_CB_RGB_0x		18		//调色框第二行的RGB888输入框0x	28*24		仅是'0x'文本，不会被选中
-#define		InUI_CB_RGB_5		19		//调色框第二行RGB888的最高位		28*24		左右更换RGB888输入位置 上下更换数值
-#define		InUI_CB_RGB_4		20
-#define		InUI_CB_RGB_3		21
-#define		InUI_CB_RGB_2		22
-#define		InUI_CB_RGB_1		23
-#define		InUI_CB_RGB_0		24
-#define		InUI_CB_RGB_True	25		//RGB888 确认					28*24		下键重新刷新
-#define		InUI_CB_RGB_False	26		//RGB888 取消
-#define 	InUI_CB_Line2_BK	27		//调色框第二行背景
-/*关于UI 想在中间插入很难做 应该把这些做成宏定义或者变量
- *	17	颜色框-字体选择		//24*120左右更换字体 下键确认 上键返回并不更改
- *	18	颜色(rgb565)0x	0	
- *	19					1
- *	20					2
- *	21					3
- *	22					4
- *	23					5
- *	24					6
- *	25					7
- *	26	颜色确认					T 重新刷新当前页，并跳出颜色栏
- *	27	颜色取消					F 重新刷新当前页，并跳出颜色栏
- *	28	退出颜色配置
- *	29	RGB888输入		0x	//6位数字
- *	30					0
- *	31					1
- *	32					2
- *	33					3
- *	34					4
- *	35					5
- *	36					T	确定
- *	37					F	取消
+#define 	InUI_CB_Font0		3		//调色框第一行，0号字体			20*24		每个UI有四种字体
+#define 	InUI_CB_Font1		4		//调色框第一行，1号字体
+#define 	InUI_CB_Font2		5		//调色框第一行，2号字体
+#define 	InUI_CB_Font3		6		//调色框第一行，3号字体
+#define 	InUI_CB_Type_FT		7		//调色框第一行"FT" front前景色	60*24 		下键选中固定颜色0 左键选中示例图片/数字 右键选中背景色 
+#define 	InUI_CB_Type_BK		8		//调色框第一行"BK" back背景色		60*24 		下键选中固定颜色0	左键选中前景色 右键选中字体并换成字体选择UI
+#define 	InUI_CB_Type_F_		9		//调色框第一行"F_" font字体		60*24 		下键选中字体选择	左键选中背景色并换成颜色框UI
+#define     InUI_CB_Type_Q_		10		//调色框第一行"Q_" 退出			60*24		下键退出并重新刷新当前页 左键返回F_
+#define 	InUI_CB_ColorFix0	11		//调色框第二行固定颜色0~7			28*24 		上键返回前景色/背景色 左键UI_index-1 右键UI_index+1 下键确认
+#define 	InUI_CB_ColorFix1	12				//颜色值保存在parameter中
+#define 	InUI_CB_ColorFix2	13	
+#define 	InUI_CB_ColorFix3	14	
+#define 	InUI_CB_ColorFix4	15	
+#define 	InUI_CB_ColorFix5	16		
+#define 	InUI_CB_ColorFix6	17		
+#define 	InUI_CB_ColorFix7	18		
+#define     InUI_CB_ColorUS		19		//调色框第二行倒数第二个UnSure	16*16		下键进入RGB888输入框
+#define     InUI_CB_ColorOld	20		//调色框第二行，保存字体之前的颜色	16*16	
+#define		InUI_CB_RGB_0x		21		//调色框第二行的RGB888输入框0x	28*24		仅是'0x'文本，不会被选中
+#define		InUI_CB_RGB_5		22		//调色框第二行RGB888的最高位		28*24		左右更换RGB888输入位置 上下更换数值
+#define		InUI_CB_RGB_4		23
+#define		InUI_CB_RGB_3		24
+#define		InUI_CB_RGB_2		25
+#define		InUI_CB_RGB_1		26
+#define		InUI_CB_RGB_0		27
+#define		InUI_CB_RGB_True	28		//RGB888 确认					28*24		下键重新刷新
+#define		InUI_CB_RGB_False	29		//RGB888 取消
+#define 	InUI_CB_Line2_BK	30		//调色框第二行背景
+
+/*
  *
  *	......
  *
@@ -110,9 +103,9 @@ tft_page* page_color_changed 	= &PAGE[0];
  *	81	分
  *	82	秒
  *	83	毫秒
- *	84	时/分：
- *	85	分/秒：
- *	86	秒/毫秒
+ *	84	时/分:
+ *	85	分/秒:
+ *	86	秒/毫秒:
  *		
  *
  */
@@ -243,14 +236,19 @@ void DOWN_CB_Type(tft_ui* u)
 		QY_Printf("\r\n UI_Instance_example缺乏绑定 \r\n");
 	}
 }
+//确定切换颜色
 void DOWN_CB_Color(tft_ui* u)
 {
+	//刷新调色框第二行
 	for(int i=InUI_CB_ColorFix0;i<=InUI_CB_ColorOld;i++)
 	{
 		UI[i].font = &FONT[4];
 		UI_AddRender(&UI[i]);
 	}
 	UI_CURSOR.temp_font = &FONT[2];
+	//更改状态
+	UI_CURSOR.temp_ui->Func_ChangeState(UI_CURSOR.temp_ui,color_changed_state);
+	//更改颜色
 	if(index_cb_type==InUI_CB_Type_FT)
 	{
 		UI[InUI_CB_Sample].font->ft_color = u->parameter;
@@ -261,9 +259,10 @@ void DOWN_CB_Color(tft_ui* u)
 		UI[InUI_CB_Sample].font->bk_color = u->parameter;
 		UI_CURSOR.temp_ui->font->bk_color = u->parameter;
 	}
+	//重新渲染
 	UI_AddRender(&UI[InUI_CB_Sample]);
-	UI_Cursor_ChangeUI(UI_CURSOR.ptr_ui);
 	UI_AddRender(UI_CURSOR.temp_ui);
+	UI_Cursor_ChangeUI(UI_CURSOR.ptr_ui);
 }
 void UP_CB_Color(tft_ui* u)
 {
@@ -415,6 +414,25 @@ void DOWN_CB_RGB_False(tft_ui* u)
 	UI_AddRender(UI_CURSOR.temp_ui);
 	Other_CB_RGB_TrueOrFalse();
 }
+void DOWN_CB_Font(tft_ui* u)
+{
+	color_changed_state = u->value_num;
+	//更改选中UI的状态
+	UI_CURSOR.temp_ui->Func_ChangeState(UI_CURSOR.temp_ui,u->value_num);
+	UI[InUI_CB_Sample].font->bk_color = UI_CURSOR.temp_ui->font->bk_color;
+	UI[InUI_CB_Sample].font->ft_color = UI_CURSOR.temp_ui->font->ft_color;
+	UI_AddRender(&UI[InUI_CB_Sample]);
+	UI_AddRender(UI_CURSOR.temp_ui);
+	//自身颜色改为选中状态
+	for(int i=InUI_CB_Font0;i<=InUI_CB_Font3;i++)
+	{
+		UI[i].font = &FONT[1];
+		UI_AddRender(&UI[i]);
+	}
+	UI_CURSOR.temp_font = &FONT[2];
+	UI_CURSOR.parameter = InUI_CB_Type_FT;
+	UI_Cursor_ChangeUI(&UI[InUI_CB_Type_FT]);
+}
 
 
 /* 初始化相关 */
@@ -475,16 +493,50 @@ void LEFT_ClockNum83(tft_ui* u)
 {//80~83
 	UI_Cursor_ChangeUI(&UI[82]);
 }
+
+/**	能起出"aaa"这样的函数名，
+  *	是真的失去了所有的力气和手段了
+  */
+void aaa(tft_ui* u)
+{
+	switch(u->value_num/15)
+	{
+	case 1:u->Func_ChangeState(u,u->value_num/15);break;
+	case 2:u->Func_ChangeState(u,u->value_num/15);break;
+	case 3:u->Func_ChangeState(u,u->value_num/15);break;
+	default:u->Func_ChangeState(u,0);break;
+	}
+}
 void UP_ClockNum(tft_ui* u)
 {
 	u->value_num++;
+	aaa(u);
 	UI_AddRender(u);
 }
 void DOWN_ClockNum(tft_ui* u)
 {
 	u->value_num--;
+	aaa(u);
 	UI_AddRender(u);
 }
+void ChangeState_ClockNum(struct tft_ui* u,int8_t state)
+{
+	if(state<0||state>=4)
+	{
+		return;
+	}
+	if(u->font!=UI_CURSOR.cursor_font)
+	{
+		u->font = u->d_font[state];
+	}
+	else
+	{
+		UI_CURSOR.temp_font = u->d_font[state];
+	}
+}
+
+
+
 
 /*  对外接口  */
 //固定初始化
@@ -523,10 +575,33 @@ tft_font* INS_Init_UI(void)
 	UI[InUI_ColorBox] = UI_CreateUI(0,240-51,&FONT[1],NULL_UI_Func);
 	//		颜色框-示例图片/数字	//不会被光标选中 32*32	坐标相对与颜色选择框 +9，+9 边框+4,+4,42,42,3 
 	UI[InUI_CB_Sample] = UI_CreateUI(0,240-51,&FONT[3],Render_CB_Sample);
-	//		颜色框-当前UI备注		//36*24 要更改的UI的下标	右键进入前景色 上下键更改当前要修改的UI
-	UI[InUI_CB_UIIndex] = UI_CreateUI(53,1,&FONT[1],Render_CB_UIIndex);
-	UI[InUI_CB_UIIndex].parameter = 3;
-	UI[InUI_CB_UIIndex].value_num = 0;
+	//		颜色框-字体0
+	UI[InUI_CB_Font0] = UI_CreateUI(SCREEN_WIDTH-170-20*3,1,&FONT[1],Render_CB_TEXT);
+	UI[InUI_CB_Font0].parameter = 1;
+	UI[InUI_CB_Font0].value_num = 0;
+	INS_StringCpy(UI[InUI_CB_Font0].value_text,"0");
+	//		颜色框-字体1
+	UI[InUI_CB_Font1] = UI_CreateUI(SCREEN_WIDTH-170-20*2,1,&FONT[1],Render_CB_TEXT);
+	UI[InUI_CB_Font1].parameter = 1;
+	UI[InUI_CB_Font1].value_num = 1;
+	INS_StringCpy(UI[InUI_CB_Font1].value_text,"1");
+	//		颜色框-字体2
+	UI[InUI_CB_Font2] = UI_CreateUI(SCREEN_WIDTH-170-20*1,1,&FONT[1],Render_CB_TEXT);
+	UI[InUI_CB_Font2].parameter = 1;
+	UI[InUI_CB_Font2].value_num = 2;
+	INS_StringCpy(UI[InUI_CB_Font2].value_text,"2");
+	//		颜色框-字体3
+	UI[InUI_CB_Font3] = UI_CreateUI(SCREEN_WIDTH-170,1,&FONT[1],Render_CB_TEXT);
+	UI[InUI_CB_Font3].parameter = 1;
+	UI[InUI_CB_Font3].value_num = 3;
+	INS_StringCpy(UI[InUI_CB_Font3].value_text,"3");
+	for(int i=InUI_CB_Font0;i<=InUI_CB_Font3;i++)
+	{
+		UI[i].Func_Event_DOWN = DOWN_CB_Font;
+		UI[i].Func_Event_LEFT = LEFT_CursorMove;
+		UI[i].Func_Event_RIGHT = RIGHT_CursorMove;
+	}
+	UI[InUI_CB_Font0].Func_Event_LEFT = NULL_UI_Func;
 	//		颜色框-前景色		//front 36*24 下键选中固定颜色0 左键选中示例图片/数字 右键选中前景色 
 	UI[InUI_CB_Type_FT] = UI_CreateUI(SCREEN_WIDTH-36*4,1,&FONT[1],Render_CB_TEXT);
 	UI[InUI_CB_Type_FT].parameter = 2;
@@ -543,13 +618,12 @@ tft_font* INS_Init_UI(void)
 	UI[InUI_CB_Type_Q_] = UI_CreateUI(SCREEN_WIDTH-36,1,&FONT[1],Render_CB_TEXT);
 	UI[InUI_CB_Type_Q_].parameter = 2;
 	INS_StringCpy(UI[InUI_CB_Type_Q_].value_text,"Q_");
-	for(int i=InUI_CB_UIIndex;i<=InUI_CB_Type_Q_;i++)
+	for(int i=InUI_CB_Type_FT;i<=InUI_CB_Type_Q_;i++)
 	{
 		UI[i].Func_Event_DOWN = DOWN_CB_Type;
 		UI[i].Func_Event_LEFT = LEFT_CursorMove;
 		UI[i].Func_Event_RIGHT = RIGHT_CursorMove;
 	}
-	UI[InUI_CB_UIIndex].Func_Event_LEFT = NULL_UI_Func;
 	UI[InUI_CB_Type_Q_].Func_Event_RIGHT = NULL_UI_Func;
 	//		颜色框 	-固定颜色0	//外尺寸24*24 颜色16*16 颜色框2 上键返回前景色/背景色 左键UI_index-1 右键UI_index+1 下键确认
 	UI[InUI_CB_ColorFix0] = UI_CreateUI(54,26,&FONT[4],Render_CB_ColorFix);
@@ -641,7 +715,26 @@ tft_font* INS_Init_UI(void)
 		UI[i+80].value_num = 0;
 		UI[i+80].Func_Event_UP = UP_ClockNum;
 		UI[i+80].Func_Event_DOWN = DOWN_ClockNum;
+		UI[i+80].Func_ChangeState = ChangeState_ClockNum;
 	}
+	// 87,88,89FONT[1]  90,91,92FONT[2]  93,94,95FONT[3]
+//	for(int i=0;i<3;i++)
+//	{
+//		FONT[i+87] = TFTF_CreateFont((const char*)font_ASCII_PIXEL_3216,32,16,TFT_RGB888To565(0xf08a5d),TFT_RGB888To565(0xeaffd0));
+//		FONT[i+90] = TFTF_CreateFont((const char*)font_ASCII_PIXEL_3216,32,16,TFT_RGB888To565(0xa6e3e9),TFT_RGB888To565(0x252a34));
+//		FONT[i+93] = TFTF_CreateFont((const char*)font_ASCII_PIXEL_3216,32,16,TFT_RGB888To565(0xeaeaea),TFT_RGB888To565(0xff2e63));
+//	}
+	//FONT[90+]
+	for(int i=0;i<4;i++)
+	{
+		FONT[90+i*3] = TFTF_CreateFont((const char*)font_ASCII_PIXEL_3216,32,16,TFT_RGB888To565(0xc91f37),TFT_RGB888To565(0xa98175));
+		UI[80+i].d_font[1] = &FONT[90+i*3];
+		FONT[91+i*3] = TFTF_CreateFont((const char*)font_ASCII_PIXEL_3216,32,16,TFT_RGB888To565(0xa6e3e9),TFT_RGB888To565(0x252a34));
+		UI[80+i].d_font[2] = &FONT[91+i*3];
+		FONT[92+i*3] = TFTF_CreateFont((const char*)font_ASCII_PIXEL_3216,32,16,TFT_RGB888To565(0xeaeaea),TFT_RGB888To565(0xff2e63));
+		UI[80+i].d_font[3] = &FONT[92+i*3];
+	}
+	
 	UI[80].Func_Event_LEFT = LEFT_ClockNum80;
 	UI[80].Func_Event_RIGHT=RIGHT_ClockNum80;
 	UI[81].Func_Event_LEFT = LEFT_ClockNum81;
@@ -666,8 +759,12 @@ tft_page* INS_Init_Page(void)
 {
 	//页面配置
 	//	0 颜色选择页
-	uint16_t indexs_ofPage0[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17};
-	UI_CreatePage(&PAGE[0],indexs_ofPage0,sizeof(indexs_ofPage0)/sizeof(uint16_t),&UI[InUI_CB_Type_FT],Render_Page0);
+	uint16_t indexs_ofPage0[21];
+	for(int i=0;i<=20;i++)
+	{
+		indexs_ofPage0[i] = i;
+	}
+	UI_CreatePage(&PAGE[0],indexs_ofPage0,sizeof(indexs_ofPage0)/sizeof(uint16_t),&UI[InUI_CB_Font0],Render_Page0);
 	//	1 时钟页
 	uint16_t indexs_ofPage1[] = {80,81,82,83,84,85,86};
 	UI_CreatePage(&PAGE[1],indexs_ofPage1,sizeof(indexs_ofPage1)/sizeof(uint16_t),&UI[80],Render_Page1);
@@ -687,56 +784,29 @@ void INS_EnterColorChange(void)
 		return;
 	}
 	//获取要更改的UI的下标
-	for(int i=0;i<100;i++)
-	{
-		if(UI_CURSOR.ptr_page->ui_index[i]==999)
-		{
-			break;
-		}
-		if(&UI[UI_CURSOR.ptr_page->ui_index[i]] == UI_CURSOR.ptr_ui)
-		{
-			UI[InUI_CB_UIIndex].value_num = UI_CURSOR.ptr_page->ui_index[i];
-			break;
-		}
-	}
 	//做页面跳转的准备
-	uint8_t color_box_up = 0;	//判断调色器位置
-	page_color_changed = UI_CURSOR.ptr_page;
-	UI_CURSOR.parameter = InUI_CB_Type_FT;
+	color_changed_page = UI_CURSOR.ptr_page;
+	color_changed_state = 0;
+	UI_CURSOR.parameter = InUI_CB_Font0;
 	UI_CURSOR.temp_ui = UI_CURSOR.ptr_ui;
-	//确定调色器位置
-	if(UI[InUI_ColorBox].y!=0&&UI_CURSOR.temp_ui->y>UI[InUI_ColorBox].y || 
-	   UI_CURSOR.temp_ui->y+UI_CURSOR.temp_ui->font->size_height>UI[InUI_ColorBox].y)
+	for(int i=InUI_CB_Font1;i<=InUI_CB_Font3;i++)
 	{
-		UI[InUI_ColorBox].y = 0;
-		color_box_up = 1;
+		UI[i].font = &FONT[1];
 	}
-	else 
-	{
-		UI[InUI_ColorBox].y = SCREEN_HEIGHT-51;
-	}
+	UI[InUI_CB_Font0].font = &FONT[2];
 	//CB_Sample
+	UI_CURSOR.temp_font = UI_CURSOR.temp_ui->d_font[0];
 	UI[InUI_CB_Sample].font->bk_color = UI_CURSOR.temp_font->bk_color;
 	UI[InUI_CB_Sample].font->ft_color = UI_CURSOR.temp_font->ft_color;
 	//PAGE[0]->调色器页面
 	UI_ChangePage(&PAGE[0]);
 	for(int i=0;i<100;i++)
 	{
-		if(page_color_changed->ui_index[i]==999)
+		if(color_changed_page->ui_index[i]==999)
 		{
 			break;
 		}
-		//我都不敢想这段代码要怎么读
-		//避免页面刷新内容和调色器冲突
-		if(color_box_up==1 && UI[page_color_changed->ui_index[i]].y<UI[InUI_CB_Sample].y+51)//调色器在上面
-		{//调色器在上面 并且 当前UI的y比调色器的下底边高
-			continue;
-		}
-		else if(color_box_up==0 && UI[page_color_changed->ui_index[i]].y+UI[page_color_changed->ui_index[i]].font->size_height>UI[InUI_CB_Sample].y)
-		{//调色器在下面 并且 当前UI下底边比调色器的y(上顶)低
-			continue;
-		}
-		UI[page_color_changed->ui_index[i]].is_present = 1;
+		UI[color_changed_page->ui_index[i]].is_present = 1;
 	}
 	UI_AddRender(UI_CURSOR.temp_ui);
 }
@@ -744,14 +814,14 @@ void INS_ExitColorChange(void)
 {
 	for(int i=0;i<100;i++)
 	{
-		if(page_color_changed->ui_index[i]==999)
+		if(color_changed_page->ui_index[i]==999)
 		{
 			break;
 		}
-		UI[page_color_changed->ui_index[i]].is_present = 0;
-		UI[page_color_changed->ui_index[i]].readyto_present = 0;
+		UI[color_changed_page->ui_index[i]].is_present = 0;
+		UI[color_changed_page->ui_index[i]].readyto_present = 0;
 	}
-	UI_ChangePage(page_color_changed);
+	UI_ChangePage(color_changed_page);
 }
 
 //以上是对外接口
@@ -769,12 +839,16 @@ void Clock_NumAdd(void)
 			{
 				UI[81].value_num = 0;
 				UI[80].value_num++;
+				aaa(&UI[80]);
 				UI_AddRender(&UI[80]);
 			}
+			aaa(&UI[81]);
 			UI_AddRender(&UI[81]);
 		}
+		aaa(&UI[82]);
 		UI_AddRender(&UI[82]);
 	}
+	aaa(&UI[83]);
 	UI_AddRender(&UI[83]);
 }
 //测试接口
