@@ -9,6 +9,10 @@
  *				——2025/8/6-9:01
  *//*这里真正实现的函数就是UI_AddRender*/
 
+//当前屏幕大小
+#define SCREEN_WIDTH 	320
+#define SCREEN_HEIGHT 	240
+
 /*  屏幕元素结构体  */
 //page，屏幕的当前位置
 typedef struct tft_page{
@@ -22,10 +26,10 @@ typedef struct tft_ui{
 	uint16_t 	x;
 	uint16_t 	y;
 	tft_font* 	font;
-	tft_font*	d_font[4];				//不同状态下的字体
+	tft_font*	d_font[4];			//不同状态下的字体
 	int8_t 		is_present;			//是否显示
 	int8_t		readyto_present;	//判断是否已经在显示队列中,避免重复添加
-	char		notes[20];			//备注
+//	char		notes[20];			//备注
 	
 	//值(value)，可扩展
 	uint32_t 	value_num;
@@ -40,6 +44,8 @@ typedef struct tft_ui{
 							//		其中，digits(位数) 就需要分别填2和3
 							//		此时，如果有parameter，可以写成TFTF_ShowNum(x,y,num,font,ui->parameter);
 							//应用场景很多
+	uint16_t	index_start;	//有些UI和其他UI相绑定成一个组，UI组的起止下标
+	uint16_t	index_end;
 	
 	//绑定的函数方法
 	void (*Func_Render_N)(struct tft_ui* self);	//N表示不应该直接被调用
@@ -56,7 +62,6 @@ typedef struct tft_ui{
 	void (*Func_ChangeState)(struct tft_ui* self,int8_t state);//更改当前状态
 	void (*Func_StateRule)(struct tft_ui* self);	//检查自身状态并适配
 													//UI的状态可能和某些值相关联，可能会发生修改值
-													
 	void (*Func_Event_UP)(struct tft_ui* self);		//上移
 	void (*Func_Event_DOWN)(struct tft_ui* self);	//下移
 	void (*Func_Event_LEFT)(struct tft_ui* self);	//左移

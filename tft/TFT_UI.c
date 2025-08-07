@@ -41,7 +41,7 @@ uint16_t queue_render_func_index=0;
   */
 void NULL_UI_Func(struct tft_ui* none)
 {
-	QY_Printf("\r\n 警告！当前UI对象没有绑定该操作函数 \r\n");
+//	QY_Printf("\r\n 警告！当前UI对象没有绑定该操作函数 \r\n");
 }
 void NULL_VOID_Func(void)
 {
@@ -174,6 +174,8 @@ tft_ui UI_CreateUI(uint16_t x,uint16_t y,tft_font* font,void (*Func_Render)(stru
 	{
 		u.d_font[i] = font;
 	}
+	u.index_end = 0;
+	u.index_start = 0;
 	
 	return u;
 }

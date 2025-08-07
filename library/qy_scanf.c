@@ -4,6 +4,7 @@
 #include "TFT_UI.h"
 #include "TFT_font.h"
 #include "UI_Instance_example.h"
+#include "UI_Ins_ColorBox.h"
 
 extern uint8_t buff;
 extern tft_ui UI[10];
