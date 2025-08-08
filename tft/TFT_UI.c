@@ -271,7 +271,6 @@ void UI_ChangePage(tft_page* new_page)
 		}
 		UI[new_page->ui_index[i]].is_present = 1;
 		UI[new_page->ui_index[i]].readyto_present = 0;
-		UI[new_page->ui_index[i]].font = UI[new_page->ui_index[i]].d_font[0];
 		UI[new_page->ui_index[i]].Func_StateRule(&UI[new_page->ui_index[i]]);
 		UI_AddRender(&UI[new_page->ui_index[i]]);
 	}

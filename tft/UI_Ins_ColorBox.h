@@ -2,6 +2,10 @@
 #define __UI_INS_COLORBOX_H__
 #include "TFT_UI.h"
 
+//字体配置
+
+
+//UI配置
 #define		InUI_Cursor			0
 #define 	InUI_ColorBox		1		//不会被光标选中					51*WIDTH 	是更改颜色的界面  
 #define 	InUI_CB_Sample		2		//调色框中最左侧的样本图片  		51*51		是颜色示例
@@ -34,32 +38,16 @@
 #define		InUI_CB_RGB_True	29		//RGB888 确认					28*24		下键重新刷新
 #define		InUI_CB_RGB_False	30		//RGB888 取消
 #define 	InUI_CB_Line2_BK	31		//调色框第二行背景
+#define		InUI_CB_FONTChange	32		//调色框第二行，更改字体			120*24		左右键更换字体，下键确认，上键返回
 
 
 /*  接口  */
-void INS_EnterColorChange(void);
-void INS_ExitColorChange(void);
+void ColorBox_Enter(void);
+void ColorBox_Exit(void);
 void Init_ColorBox_UI(void);
 void Init_ColorBox_Page(void);
 
 
-/* UI绑定函数  */
-void Render_CB_Sample(tft_ui* u);
-void Render_CB_TEXT(tft_ui* u);
-void Render_CB_UIIndex(tft_ui* u);
-void Render_CB_ColorFix(tft_ui* u);
-void Render_CB_ColorUS(tft_ui* u);
-void Render_CB_RGB(tft_ui* u);
-void Render_CB_Line2_BK(tft_ui* u);
-void DOWN_CB_Type(tft_ui* u);
-void DOWN_CB_Color(tft_ui* u);
-void UP_CB_Color(tft_ui* u);
-void DOWN_CB_ColorUS(tft_ui* u);
-void DOWN_CB_RGB(tft_ui* u);
-void UP_CB_RGB(tft_ui* u);
-void DOWN_CB_RGB_True(tft_ui* u);
-void DOWN_CB_RGB_False(tft_ui* u);
-void DOWN_CB_Font(tft_ui* u);
 
 
 

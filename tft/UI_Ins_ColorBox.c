@@ -2,17 +2,37 @@
 #include "TFT_UI.h"
 #include "TFT_font.h"
 #include "TFT_ILI9341.h"
-#include "UI_Instance_example.h"
 #include "qy_printf.h"
+
+/*	把调色框专门写了一个文件
+ *	
+ *
+ *
+ *
+ */
 
 extern tft_pointer 	UI_CURSOR;				//光标
 extern tft_font 	FONT[300];				//字体
 extern tft_ui 		UI[100];				//UI
 extern tft_page 	PAGE[20];				//页面
+extern tft_font 	null_font;				//表示未绑定font size_width=size_height = 999;
 
 /* 字体库 */
+	//字体
 extern const char font_ASCII_PIXEL_2412[][36];
 extern const char font_ASCII_PIXEL_3216[][64];
+//extern const char font_ASCII_PIXEL_4020[][100];
+extern const char font_ASCII_NI7SEG_2412[][36];
+extern const char font_ASCII_NI7SEG_3216[][64];
+//extern const char font_ASCII_NI7SEG_4020[][100];
+extern const char font_ASCII_Gothic_2412[][36];
+extern const char font_ASCII_Gothic_3216[][64];
+//extern const char font_ASCII_Gothic_4020[][100];
+			//有关字体增减的函数配置
+			//static void Other_CB_FONTChange(tft_ui* u)
+			//static void Other_ChangeFont(tft_font* f)
+			//void LEFT/RIGHT_CB_FONTChange(tft_ui* u)
+	//图片
 extern const char qyf_pic01_cloud_3232[];
 extern const char qyf_pic01_object_2424[];
 extern const char qyf_pic01_down_2424[];
@@ -22,24 +42,28 @@ extern const char qyf_pic01_up_2424[];
 uint16_t COLOR_FIXED[8];
 uint16_t COLOR_RGB565[8];
 
-
 /*  临时存储的全局变量  */
 	//颜色修改面板的page缓冲区
 tft_page* color_changed_page 	= &PAGE[0];
-	//当前修改的颜色处于哪种状态
+	//当前要修改UI的哪个字体0~3号字体
 int8_t 	  color_changed_font_Index 	= 0;
 	//是否修改当前整个UI组
 int8_t 	  color_changed_combination = 1;
 	//当前修改的UI的Index
 uint16_t  color_changed_ui_index = 0;
 	//临时存储要修改的字体
-extern tft_font null_font;	//表示未绑定font size_width=size_height = 999;
 tft_font*	color_changed_font[4][16];
 tft_font	color_changed_font_temp[16];
-	//第二行颜色框处于 固定色块/RGB色块
+	//第二行处于 0-固定色块/1-RGB色块
 uint16_t cb_colorchange = 0;
+	//当前要修改UI字体的什么属性（InUI_CB_FT-前景色/InUI_CB_BK-背景色/InUI_CB_F_-字体）
+uint8_t index_cb_type;
+	//字体类型 (0-PIXEL_LCD7/1-NI7SEG/2-MS_Gothic)
+int8_t  color_changed_font_type;	
 
 /*  复用率较高的函数  */
+/**@brief  字符串，把_string赋给target
+  */
 void INS_StringCpy(char* target,const char* _string)
 {
 	int i=0;
@@ -49,10 +73,16 @@ void INS_StringCpy(char* target,const char* _string)
 	}
 	target[i] = '\0';
 }
+/**@brief  光标左移
+  *@add	   用光标的parameter属性来存储UI的下标
+  *		   很多左右相邻的UI元素 其下标也是相邻的
+  */
 void LEFT_CursorMove(tft_ui* u)
 {
 	UI_Cursor_ChangeUI(&UI[--UI_CURSOR.parameter]);
 }
+/**@brief  光标右移
+  */
 void RIGHT_CursorMove(tft_ui* u)
 {
 	UI_Cursor_ChangeUI(&UI[++UI_CURSOR.parameter]);
@@ -118,8 +148,13 @@ void Render_CB_Line2_BK(tft_ui* u)
 }
 
 
-
 	/*  调色框-交互部分  */
+void UP_CB_Color(tft_ui* u)
+{
+	UI_CURSOR.parameter = index_cb_type;
+	UI_Cursor_ChangeUI(&UI[index_cb_type]);
+	UI_CURSOR.temp_font = &FONT[1];
+}
 void DOWN_CB_ColorChange(tft_ui* u)
 {
 	uint16_t j=0;
@@ -164,7 +199,7 @@ void DOWN_CB_ColorChange(tft_ui* u)
 	UI_AddRender(u);
 	u->Func_Event_RIGHT = NULL_UI_Func;
 }
-uint8_t index_cb_type;
+//修改前景色/背景色/字体
 void DOWN_CB_Type(tft_ui* u)
 {
 	index_cb_type = UI_CURSOR.parameter;
@@ -191,8 +226,43 @@ void DOWN_CB_Type(tft_ui* u)
 		cb_colorchange =1;
 		DOWN_CB_ColorChange(&UI[InUI_CB_ColorChange]);
 		break;
+	case InUI_CB_Type_F_:
+		//做一下字体判定
+		if(UI_CURSOR.temp_ui->font->font_lib == (const char*)font_ASCII_PIXEL_2412 ||
+		   UI_CURSOR.temp_ui->font->font_lib == (const char*)font_ASCII_PIXEL_3216 )
+//		   UI_CURSOR.temp_ui->font->font_lib == (const char*)font_ASCII_PIXEL_4020 )
+		{
+			UI[InUI_CB_FONTChange].font->font_lib = (const char*)font_ASCII_PIXEL_2412;
+			color_changed_font_type = 0;
+		}
+		else if(UI_CURSOR.temp_ui->font->font_lib == (const char*)font_ASCII_NI7SEG_2412 ||
+				UI_CURSOR.temp_ui->font->font_lib == (const char*)font_ASCII_NI7SEG_3216 )
+//				UI_CURSOR.temp_ui->font->font_lib == (const char*)font_ASCII_NI7SEG_4020 )
+		{
+			UI[InUI_CB_FONTChange].font->font_lib = (const char*)font_ASCII_NI7SEG_2412;
+			color_changed_font_type = 1;
+		}
+		else if(UI_CURSOR.temp_ui->font->font_lib == (const char*)font_ASCII_Gothic_2412 ||
+				UI_CURSOR.temp_ui->font->font_lib == (const char*)font_ASCII_Gothic_3216 )
+//				UI_CURSOR.temp_ui->font->font_lib == (const char*)font_ASCII_Gothic_4020 )
+		{
+			UI[InUI_CB_FONTChange].font->font_lib = (const char*)font_ASCII_Gothic_2412;
+			color_changed_font_type = 2;
+		}
+			//清空第二行
+		UI[InUI_CB_Line2_BK].is_present = 1;
+		UI[InUI_CB_Line2_BK].readyto_present = 0;
+		UI_AddRender(&UI[InUI_CB_Line2_BK]);
+		UI[InUI_CB_Line2_BK].is_present = 0;
+			//字体选项
+		UI[InUI_CB_FONTChange].is_present = 1;
+		UI[InUI_CB_FONTChange].readyto_present = 0;
+		UI_AddRender(&UI[InUI_CB_FONTChange]);
+		//更改UI绑定
+		UI_Cursor_ChangeUI(&UI[InUI_CB_FONTChange]);
+		break;
 	case InUI_CB_Type_Q_:
-		INS_ExitColorChange();
+		ColorBox_Exit();
 		break;
 	default:
 		QY_Printf("\r\n UI_Instance_example缺乏绑定 \r\n");
@@ -243,12 +313,6 @@ void DOWN_CB_Color(tft_ui* u)
 	//重新渲染
 	UI_AddRender(&UI[InUI_CB_Sample]);
 	UI_Cursor_ChangeUI(UI_CURSOR.ptr_ui);
-}
-void UP_CB_Color(tft_ui* u)
-{
-	UI_CURSOR.parameter = index_cb_type;
-	UI_Cursor_ChangeUI(&UI[index_cb_type]);
-	UI_CURSOR.temp_font = &FONT[1];
 }
 void DOWN_CB_RGBEnter(tft_ui* u)
 {//更换成RGB888输入
@@ -395,6 +459,17 @@ void DOWN_CB_RGB_False(tft_ui* u)
 		UI[InUI_CB_Sample].font->bk_color = UI[color_changed_colorblock_index].parameter;
 	}
 	Other_CB_RGB_TrueOrFalse();
+	if(color_changed_combination==1)
+	{
+		for(int i=UI_CURSOR.temp_ui->index_start;i<=UI_CURSOR.temp_ui->index_end;i++)
+		{
+			Other_ChangeColor(UI[color_changed_colorblock_index].parameter,i);
+		}
+	}
+	else
+	{
+		Other_ChangeColor(UI[color_changed_colorblock_index].parameter,color_changed_ui_index);
+	}
 }
 //挑选当前UI要更改的状态
 void DOWN_CB_Font(tft_ui* u)
@@ -409,6 +484,7 @@ void DOWN_CB_Font(tft_ui* u)
 		{
 			UI[i].font->bk_color = color_changed_font[color_changed_font_Index][ui_index]->bk_color;
 			UI[i].font->ft_color = color_changed_font[color_changed_font_Index][ui_index]->ft_color;
+			UI[i].font->font_lib = color_changed_font[color_changed_font_Index][ui_index]->font_lib;
 			UI_AddRender(&UI[i]);
 			ui_index++;
 		}
@@ -418,7 +494,8 @@ void DOWN_CB_Font(tft_ui* u)
 				//将当前状态(color_changed_font_Index)的字体复制上
 		uint16_t backup_font_index = color_changed_ui_index - UI_CURSOR.temp_ui->index_start;
 		UI_CURSOR.temp_ui->font->bk_color = color_changed_font[color_changed_font_Index][backup_font_index]->bk_color;
-		UI_CURSOR.temp_ui->font->ft_color = color_changed_font[color_changed_font_Index][backup_font_index]->ft_color;	
+		UI_CURSOR.temp_ui->font->ft_color = color_changed_font[color_changed_font_Index][backup_font_index]->ft_color;
+		UI_CURSOR.temp_ui->font->font_lib = color_changed_font[color_changed_font_Index][backup_font_index]->font_lib;	
 	}
 	//更改示例图片
 	UI[InUI_CB_Sample].font->bk_color = UI_CURSOR.temp_ui->font->bk_color;
@@ -547,24 +624,124 @@ void DOWN_CB_Choose(tft_ui* u)
 	UI_CURSOR.temp_ui->readyto_present = 0;
 	UI_AddRender(UI_CURSOR.temp_ui);
 }
+//调色框中风扇图标绑定的函数
 void RIGHT_CB_Choose(tft_ui* u)
 {
 	RIGHT_CursorMove(u);
 	DOWN_CB_Font(&UI[InUI_CB_Font0]);
 }
+//关于字体更改的函数
+static void Other_ChangeFont(tft_font* f);
+void DOWN_CB_FONTChange(tft_ui* u)
+{
+//	font_ASCII_NI7SEG_3216;
+//	font_ASCII_PIXEL_3216;
+//	font_ASCII_Gothic_3216;
+	//UI组处理
+	uint16_t s=UI_CURSOR.temp_ui->index_start;
+	uint16_t e=UI_CURSOR.temp_ui->index_end;
+	uint16_t temp_index = color_changed_ui_index-s;
+	if(color_changed_combination==1)
+	{
+		for(int i=s;i<=e;i++)
+		{
+			temp_index = i-s;
+			Other_ChangeFont(UI[i].font);
+			Other_ChangeFont(color_changed_font[color_changed_font_Index][temp_index]);
+			UI_AddRender(&UI[i]);
+		}
+	}
+	//单独UI处理
+	else
+	{
+		Other_ChangeFont(UI_CURSOR.temp_ui->font);
+		Other_ChangeFont(color_changed_font[color_changed_font_Index][temp_index]);
+		UI_AddRender(&UI[color_changed_ui_index]);
+	}
+}
+static void Other_ChangeFont(tft_font* f)
+{
+	if(f->size_height!=2*f->size_width)
+	{
+		INS_StringCpy(UI[InUI_CB_FONTChange].value_text,"  __Not_Text_!__  ");
+		return;
+	}
+	switch(f->size_height)
+	{
+	case 24:
+		switch(color_changed_font_type)
+		{
+		case 0:f->font_lib = (const char*)font_ASCII_PIXEL_2412;	break;
+		case 1:f->font_lib = (const char*)font_ASCII_NI7SEG_2412;	break;
+		case 2:f->font_lib = (const char*)font_ASCII_Gothic_2412;	break;
+		}
+		break;
+	case 32:
+		switch(color_changed_font_type)
+		{
+		case 0:f->font_lib = (const char*)font_ASCII_PIXEL_3216;	break;
+		case 1:f->font_lib = (const char*)font_ASCII_NI7SEG_3216;	break;
+		case 2:f->font_lib = (const char*)font_ASCII_Gothic_3216;	break;
+		}
+		break;
+	case 40:
+		break;
+	default:
+		INS_StringCpy(UI[InUI_CB_FONTChange].value_text,"  __Not_Text_!__  ");
+		return;
+	}
+}
+static void Other_CB_FONTChange(tft_ui* u)
+{
+	switch(color_changed_font_type)
+	{
+	case 0:
+		INS_StringCpy(u->value_text,"<  _PIXEL_LCD7_  >");
+		break;
+	case 1:
+		INS_StringCpy(u->value_text,"<  ___NI7SEG___  >");
+		break;
+	case 2:
+		INS_StringCpy(u->value_text,"<  _MS_Gothic__  >");
+		break;
+	}
+}
+void RIGHT_CB_FONTChange(tft_ui* u)
+{
+	if(++color_changed_font_type>2)
+	{
+		color_changed_font_type = 0;
+	}
+	Other_CB_FONTChange(u);
+	Other_ChangeFont(u->font);
+	UI_Cursor_Refresh();
+}
+void LEFT_CB_FONTChange(tft_ui* u)
+{
+	if(--color_changed_font_type<0)
+	{
+		color_changed_font_type = 2;
+	}
+	Other_CB_FONTChange(u);
+	Other_ChangeFont(u->font);
+	UI_Cursor_Refresh();
+}
+
+
 
 
 
 /**@brief  打开调色框
   */
-void INS_EnterColorChange(void)
+void ColorBox_Enter(void)
 {
 	if(UI_CURSOR.ptr_page==&PAGE[0])
 	{//调色框已经显示
 		return;
 	}
-	//做页面跳转的准备
+	//做页面跳转的准备（关于全局变量）
 	color_changed_colorblock_index = InUI_CB_ColorFix0;
+	color_changed_ui_index = UI_CURSOR.ptr_ui->index_start;
 	color_changed_page = UI_CURSOR.ptr_page;
 	color_changed_font_Index = 0;
 	UI_CURSOR.parameter = InUI_CB_Choose;
@@ -592,7 +769,7 @@ void INS_EnterColorChange(void)
 }
 /**@brief  退出调色框
   */
-void INS_ExitColorChange(void)
+void ColorBox_Exit(void)
 {
 	//将字体归还
 	uint16_t font_index = 0;
@@ -606,6 +783,8 @@ void INS_ExitColorChange(void)
 	}
 	UI_ChangePage(color_changed_page);
 }
+/**@brief  初始化
+  */
 void Init_ColorBox_UI(void)
 {
 	//ColorBox全局变量初始化
@@ -636,11 +815,13 @@ void Init_ColorBox_UI(void)
 	//  3	颜色选择框-示例图片
 	FONT[3] = TFTF_CreateFont((const char*)qyf_pic01_cloud_3232,32,32,0,0xFFFF);
 	//	4	颜色选择框-颜色外圈的框
-	FONT[4] = TFTF_CreateFont((const char*)font_ASCII_PIXEL_3216,32,16,TFT_RGB888To565(0xc9d6df),TFT_RGB888To565(0xa6e3e9));
+	FONT[4] = TFTF_CreateFont((const char*)font_ASCII_PIXEL_3216,32,16,TFT_RGB888To565(0xc9d6df),FONT[1].bk_color);
 	//	5	颜色选择框-更换要调整的UI(图标)
-	FONT[5] = TFTF_CreateFont((const char*)qyf_pic01_object_2424,24,24,TFT_RGB888To565(0x40514e),TFT_RGB888To565(0xa6e3e9));
+	FONT[5] = TFTF_CreateFont((const char*)qyf_pic01_object_2424,24,24,FONT[1].ft_color,FONT[1].bk_color);
 	//	6	颜色选择框-更换色块组(图标)
-	FONT[6] = TFTF_CreateFont((const char*)qyf_pic01_down_2424,24,24,TFT_RGB888To565(0x40514e),TFT_RGB888To565(0xa6e3e9));
+	FONT[6] = TFTF_CreateFont((const char*)qyf_pic01_down_2424,24,24,FONT[1].ft_color,FONT[1].bk_color);
+	//	7	颜色选择框-第二行更换字体
+	FONT[7] = TFTF_CreateFont((const char*)font_ASCII_PIXEL_2412,24,12,FONT[1].ft_color,FONT[1].bk_color);
 	
 	//UI配置
 	//		光标
@@ -777,6 +958,14 @@ void Init_ColorBox_UI(void)
 	UI[InUI_CB_RGB_False].Func_Event_DOWN = DOWN_CB_RGB_False;
 	UI[InUI_CB_RGB_True].Func_Event_UP = NULL_UI_Func;
 	UI[InUI_CB_RGB_True].Func_Event_DOWN = DOWN_CB_RGB_True;
+	//		InUI_CB_FONTChange			//调色框第二行，更改字体			120*24		左右键更换字体，下键确认，上键返回
+	UI[InUI_CB_FONTChange] = UI_CreateUI(74,26,&FONT[7],Render_CB_TEXT);
+	INS_StringCpy(UI[InUI_CB_FONTChange].value_text,"<  _PIXEL_LCD7_  >");
+	UI[InUI_CB_FONTChange].parameter = 18;
+	UI[InUI_CB_FONTChange].Func_Event_DOWN 	= DOWN_CB_FONTChange;
+	UI[InUI_CB_FONTChange].Func_Event_UP 	= UP_CB_Color;
+	UI[InUI_CB_FONTChange].Func_Event_RIGHT = RIGHT_CB_FONTChange;
+	UI[InUI_CB_FONTChange].Func_Event_LEFT	= LEFT_CB_FONTChange;
 }
 
 void Render_Page0(void)
@@ -788,7 +977,8 @@ void Render_Page0(void)
 	//外边框
 	TFTF_DrawFrame(UI[InUI_ColorBox].x,UI[InUI_ColorBox].y,320,51,UI[InUI_ColorBox].font->ft_color,1);
 }
-
+/**@brief  页面初始化
+  */
 void Init_ColorBox_Page(void)
 {
 	uint16_t indexs_ofPage0[21];

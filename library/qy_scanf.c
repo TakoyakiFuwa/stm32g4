@@ -42,7 +42,7 @@ void QY_Scanf_Handler(UART_HandleTypeDef *huart)
 			break;
 		case 'q':
 			QY_Printf("\r\n 'q'->进入颜色配置 \r\nuser:");
-			INS_EnterColorChange();
+			ColorBox_Enter();
 			break;
 		case 'r':
 			HAL_NVIC_SystemReset();
