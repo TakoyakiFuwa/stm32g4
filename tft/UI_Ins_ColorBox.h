@@ -22,8 +22,8 @@
 #define 	InUI_CB_ColorFix5	17		
 #define 	InUI_CB_ColorFix6	18		
 #define 	InUI_CB_ColorFix7	19		
-#define     InUI_CB_ColorUS		20		//调色框第二行倒数第二个UnSure	16*16		下键进入RGB888输入框
-#define     InUI_CB_ColorOld	21		//调色框第二行，保存字体之前的颜色	16*16	
+#define     InUI_CB_ColorChange	20		//调色框第二行，更换第二行颜色选项	16*16		下键更换自身图标，隐藏/打开输入框入口，左右键函数发生变化
+#define     InUI_CB_RGB			21		//调色框第二行，打开输入框			16*16		下键进入RGB888输入框	
 #define		InUI_CB_RGB_0x		22		//调色框第二行的RGB888输入框0x	28*24		仅是'0x'文本，不会被选中
 #define		InUI_CB_RGB_5		23		//调色框第二行RGB888的最高位		28*24		左右更换RGB888输入位置 上下更换数值
 #define		InUI_CB_RGB_4		24
@@ -34,6 +34,7 @@
 #define		InUI_CB_RGB_True	29		//RGB888 确认					28*24		下键重新刷新
 #define		InUI_CB_RGB_False	30		//RGB888 取消
 #define 	InUI_CB_Line2_BK	31		//调色框第二行背景
+
 
 /*  接口  */
 void INS_EnterColorChange(void);

@@ -44,6 +44,9 @@ void QY_Scanf_Handler(UART_HandleTypeDef *huart)
 			QY_Printf("\r\n 'q'->进入颜色配置 \r\nuser:");
 			INS_EnterColorChange();
 			break;
+		case 'r':
+			HAL_NVIC_SystemReset();
+			break;
 		default:
 			QY_Printf("\r\n 这里没有按键绑定 \r\nuser:");
 		}

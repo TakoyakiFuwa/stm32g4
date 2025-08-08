@@ -15,6 +15,13 @@ extern const char font_ASCII_PIXEL_2412[][36];
 extern const char font_ASCII_PIXEL_3216[][64];
 extern const char qyf_pic01_cloud_3232[];
 extern const char qyf_pic01_object_2424[];
+extern const char qyf_pic01_down_2424[];
+extern const char qyf_pic01_up_2424[];
+
+/*  颜色库  */
+uint16_t COLOR_FIXED[8];
+uint16_t COLOR_RGB565[8];
+
 
 /*  临时存储的全局变量  */
 	//颜色修改面板的page缓冲区
@@ -29,6 +36,8 @@ uint16_t  color_changed_ui_index = 0;
 extern tft_font null_font;	//表示未绑定font size_width=size_height = 999;
 tft_font*	color_changed_font[4][16];
 tft_font	color_changed_font_temp[16];
+	//第二行颜色框处于 固定色块/RGB色块
+uint16_t cb_colorchange = 0;
 
 /*  复用率较高的函数  */
 void INS_StringCpy(char* target,const char* _string)
@@ -107,7 +116,54 @@ void Render_CB_Line2_BK(tft_ui* u)
 {
 	TFTF_DrawRect(UI[InUI_ColorBox].x+u->x,UI[InUI_ColorBox].y+u->y,SCREEN_WIDTH,24,FONT[1].bk_color);
 }
+
+
+
 	/*  调色框-交互部分  */
+void DOWN_CB_ColorChange(tft_ui* u)
+{
+	uint16_t j=0;
+	if(cb_colorchange==0)//处于固定颜色页
+	{
+		cb_colorchange = 1;
+		u->Func_Event_UP = DOWN_CB_ColorChange;
+		//换色块
+		for(int i=InUI_CB_ColorFix0;i<=InUI_CB_ColorFix7;i++)
+		{
+			UI[i].parameter = COLOR_RGB565[j++];
+			UI_AddRender(&UI[i]);
+		}
+		//更改自身图标
+		UI_CURSOR.cursor_font->font_lib = (const char*)qyf_pic01_up_2424;
+		UI_CURSOR.temp_font->font_lib = (const char*)qyf_pic01_up_2424;
+		UI_AddRender(u);
+		u->Func_Event_RIGHT = RIGHT_CursorMove;
+		//添加RGB888输入接口
+		UI[InUI_CB_RGB].is_present = 1;
+		UI[InUI_CB_RGB].readyto_present = 0;
+		UI_AddRender(&UI[InUI_CB_RGB]);
+		return;
+	}
+	u->Func_Event_UP = UP_CB_Color;	
+	cb_colorchange = 0;
+	//渲染背景
+	UI[InUI_CB_Line2_BK].is_present = 1;
+	UI[InUI_CB_Line2_BK].readyto_present = 0;
+	UI_AddRender(&UI[InUI_CB_Line2_BK]);
+	UI[InUI_CB_Line2_BK].is_present = 0;
+	//换色块
+	for(int i=InUI_CB_ColorFix0;i<=InUI_CB_ColorFix7;i++)
+	{
+		UI[i].parameter = COLOR_FIXED[j++];
+		UI_AddRender(&UI[i]);
+	}
+	//更改自身图标
+	UI_CURSOR.cursor_font->font_lib = (const char*)qyf_pic01_down_2424;
+	UI_CURSOR.temp_font->font_lib = (const char*)qyf_pic01_down_2424;
+	u->readyto_present = 0;
+	UI_AddRender(u);
+	u->Func_Event_RIGHT = NULL_UI_Func;
+}
 uint8_t index_cb_type;
 void DOWN_CB_Type(tft_ui* u)
 {
@@ -116,29 +172,24 @@ void DOWN_CB_Type(tft_ui* u)
 	{
 	case InUI_CB_Type_BK:
 	case InUI_CB_Type_FT:
-			//第二行固定颜色
-		for(int i=InUI_CB_ColorFix0;i<=InUI_CB_ColorOld;i++)
-		{
-			UI[i].font = &FONT[4];
-			UI_AddRender(&UI[i]);
-		}
-		UI[InUI_CB_ColorOld].font = &FONT[2];
-			//重新渲染第一行
+		//重新渲染第一行
 		for(int i=InUI_CB_Type_BK;i<=InUI_CB_Type_Q_;i++)
 		{
 			UI[i].font = &FONT[1];
 			UI_AddRender(&UI[i]);
 		}
-		UI[InUI_CB_ColorOld].parameter = UI_CURSOR.temp_ui->font->ft_color;
-		if(UI_CURSOR.parameter==InUI_CB_Type_BK)
-		{
-			UI[InUI_CB_ColorOld].parameter = UI_CURSOR.temp_ui->font->bk_color;
-		}
-		UI_AddRender(&UI[InUI_CB_ColorOld]);
 		//更改UI绑定
-		UI_CURSOR.parameter = InUI_CB_ColorOld;
+		UI_CURSOR.parameter = InUI_CB_ColorChange;
 		UI_CURSOR.temp_font = &FONT[2];
-		UI_Cursor_ChangeUI(&UI[InUI_CB_ColorOld]);
+		UI_Cursor_ChangeUI(&UI[InUI_CB_ColorChange]);
+		//渲染处理第二行
+		for(int i=InUI_CB_ColorFix0;i<=InUI_CB_ColorFix7;i++)
+		{
+			UI[i].font = &FONT[1];
+		}
+		UI[InUI_CB_ColorFix0].font = &FONT[2];
+		cb_colorchange =1;
+		DOWN_CB_ColorChange(&UI[InUI_CB_ColorChange]);
 		break;
 	case InUI_CB_Type_Q_:
 		INS_ExitColorChange();
@@ -148,41 +199,49 @@ void DOWN_CB_Type(tft_ui* u)
 	}
 }
 //确定切换颜色
-void DOWN_CB_Color(tft_ui* u)
+void Other_ChangeColor(uint16_t rgb565,uint16_t index)
 {
+	uint16_t changed_index = index - UI_CURSOR.temp_ui->index_start;
+	if(index_cb_type==InUI_CB_Type_FT)
+	{
+		UI[InUI_CB_Sample].font->ft_color = rgb565;
+		color_changed_font[color_changed_font_Index][changed_index]->ft_color = rgb565;
+		UI[index].font->ft_color = rgb565;
+	}
+	else if(index_cb_type==InUI_CB_Type_BK)
+	{
+		UI[InUI_CB_Sample].font->bk_color = rgb565;
+		color_changed_font[color_changed_font_Index][changed_index]->bk_color = rgb565;
+		UI[index].font->bk_color = rgb565;
+	}
+	UI_AddRender(&UI[index]);
+}
+uint16_t color_changed_colorblock_index = 0;
+void DOWN_CB_Color(tft_ui* u)
+{	
+		//便于RGB888输入框更改颜色
+	color_changed_colorblock_index = UI_CURSOR.parameter;
 	//刷新调色框第二行
-	for(int i=InUI_CB_ColorFix0;i<=InUI_CB_ColorOld;i++)
+	for(int i=InUI_CB_ColorFix0;i<InUI_CB_ColorChange;i++)
 	{
 		UI[i].font = &FONT[4];
 		UI_AddRender(&UI[i]);
 	}
 	UI_CURSOR.temp_font = &FONT[2];
-	//更改状态
-	UI_CURSOR.temp_ui->Func_ChangeState(UI_CURSOR.temp_ui,color_changed_font_Index);
 	//更改颜色
-	
-	
-		//这里缺少整体更改函数
-	
-	
-	
-	
-	uint16_t changed_index = color_changed_ui_index - UI_CURSOR.temp_ui->index_start;
-	if(index_cb_type==InUI_CB_Type_FT)
+	if(color_changed_combination==1)
 	{
-		UI[InUI_CB_Sample].font->ft_color = u->parameter;
-		color_changed_font[color_changed_font_Index][changed_index]->ft_color = u->parameter;
-		UI_CURSOR.temp_ui->font->ft_color = u->parameter;
+		for(int i=UI_CURSOR.temp_ui->index_start;i<=UI_CURSOR.temp_ui->index_end;i++)
+		{
+			Other_ChangeColor(u->parameter,i);
+		}
 	}
-	else if(index_cb_type==InUI_CB_Type_BK)
+	else
 	{
-		UI[InUI_CB_Sample].font->bk_color = u->parameter;
-		color_changed_font[color_changed_font_Index][changed_index]->bk_color = u->parameter;
-		UI_CURSOR.temp_ui->font->bk_color = u->parameter;
+		Other_ChangeColor(u->parameter,color_changed_ui_index);
 	}
 	//重新渲染
 	UI_AddRender(&UI[InUI_CB_Sample]);
-	UI_AddRender(UI_CURSOR.temp_ui);
 	UI_Cursor_ChangeUI(UI_CURSOR.ptr_ui);
 }
 void UP_CB_Color(tft_ui* u)
@@ -191,26 +250,18 @@ void UP_CB_Color(tft_ui* u)
 	UI_Cursor_ChangeUI(&UI[index_cb_type]);
 	UI_CURSOR.temp_font = &FONT[1];
 }
-uint16_t cb_rgb_false_color = 0;
-void DOWN_CB_ColorUS(tft_ui* u)
+void DOWN_CB_RGBEnter(tft_ui* u)
 {//更换成RGB888输入
-	//InUI_CB_ColorUS变为选中状态
-	for(int i=InUI_CB_ColorFix0;i<=InUI_CB_ColorOld;i++)
-	{
-		UI[i].font = &FONT[4];
-	}
-	UI_CURSOR.temp_font = &FONT[2];
-	//记录旧颜色，用于CB_RGB_FALSE
+	//把旧颜色放在InUI_CB_RGB0~5中显示
+	uint32_t oc = 0;//Old Color
 	if(index_cb_type==InUI_CB_Type_FT)
 	{
-		cb_rgb_false_color = UI[InUI_CB_Sample].font->ft_color;
+		oc = UI[InUI_CB_Sample].font->ft_color;
 	}
-	else if(index_cb_type==InUI_CB_Type_BK)
+	else
 	{
-		cb_rgb_false_color = UI[InUI_CB_Sample].font->bk_color;
+		oc = UI[InUI_CB_Sample].font->bk_color; 
 	}
-	//把旧颜色放在InUI_CB_RGB0~5中显示
-	uint32_t oc = cb_rgb_false_color;
 	uint32_t red = (oc&0xF800);//1111 1000 0000 0000
 	uint32_t green = (oc&0x7E0);//0000 0111 1110 0000
 	uint32_t blue = (oc&0x1F);//0000 0000 0001 1111
@@ -236,7 +287,7 @@ void DOWN_CB_ColorUS(tft_ui* u)
 		UI_AddRender(&UI[i]);
 	}
 	//UI指向新位置
-	UI[InUI_CB_ColorUS].is_present = 0;
+	UI[InUI_CB_RGB].is_present = 0;
 	UI_Cursor_ChangeUI(&UI[InUI_CB_RGB_5]);
 	UI_CURSOR.parameter = InUI_CB_RGB_5;
 }
@@ -252,15 +303,16 @@ static void Other_CB_RGB(void)
 		//改成RGB565
 	rgb888 = TFT_RGB888To565(rgb888);
 	//更改示例UI颜色
-	if(index_cb_type==InUI_CB_Type_FT)
+	if(color_changed_combination==1)
 	{
-		UI[InUI_CB_Sample].font->ft_color = rgb888;
-		UI_CURSOR.temp_ui->font->ft_color = rgb888;
+		for(int i=UI_CURSOR.temp_ui->index_start;i<=UI_CURSOR.temp_ui->index_end;i++)
+		{
+			Other_ChangeColor(rgb888,i);
+		}
 	}
-	else if(index_cb_type==InUI_CB_Type_BK)
+	else
 	{
-		UI[InUI_CB_Sample].font->bk_color = rgb888;
-		UI_CURSOR.temp_ui->font->bk_color = rgb888;
+		Other_ChangeColor(rgb888,color_changed_ui_index);
 	}
 	//重新刷新UI
 	UI_AddRender(&UI[InUI_CB_Sample]);
@@ -298,19 +350,31 @@ void UP_CB_RGB(tft_ui* u)
 }
 static void Other_CB_RGB_TrueOrFalse(void)
 {
+	//修改全局变量->自定义颜色
+	if(index_cb_type==InUI_CB_Type_FT)
+	{
+		COLOR_RGB565[color_changed_colorblock_index-InUI_CB_ColorFix0] = UI[InUI_CB_Sample].font->ft_color;
+		UI[color_changed_colorblock_index].parameter = UI[InUI_CB_Sample].font->ft_color;
+	}
+	else
+	{
+		COLOR_RGB565[color_changed_colorblock_index-InUI_CB_ColorFix0] = UI[InUI_CB_Sample].font->bk_color;
+		UI[color_changed_colorblock_index].parameter = UI[InUI_CB_Sample].font->bk_color;
+	}
 	//调色框第二行换回固定颜色栏
 	UI[InUI_CB_Line2_BK].is_present =1;
 	UI[InUI_CB_Line2_BK].readyto_present =0;
 	UI_AddRender(&UI[InUI_CB_Line2_BK]);
 	UI[InUI_CB_Line2_BK].is_present =0;
-	for(int i=InUI_CB_ColorFix0;i<=InUI_CB_ColorOld;i++)
+	UI[InUI_CB_RGB].is_present = 1;
+	UI[InUI_CB_RGB].readyto_present = 0;
+	for(int i=InUI_CB_ColorFix0;i<=InUI_CB_RGB;i++)
 	{
 		UI_AddRender(&UI[i]);
 	}
-	UI_CURSOR.parameter = InUI_CB_ColorUS;
-	UI[InUI_CB_ColorUS].is_present = 1;
-	UI[InUI_CB_ColorUS].readyto_present = 0;
-	UI_Cursor_ChangeUI(&UI[InUI_CB_ColorUS]);
+	//更换到当前绑定的色块
+	UI_CURSOR.parameter = color_changed_colorblock_index;
+	UI_Cursor_ChangeUI(&UI[color_changed_colorblock_index]);
 }
 //确认RGB888颜色更改
 void DOWN_CB_RGB_True(tft_ui* u)
@@ -324,16 +388,12 @@ void DOWN_CB_RGB_False(tft_ui* u)
 	u->is_present = 0;
 	if(index_cb_type==InUI_CB_Type_FT)
 	{
-		UI[InUI_CB_Sample].font->ft_color = cb_rgb_false_color;
-		UI_CURSOR.temp_ui->font->ft_color = cb_rgb_false_color;
+		UI[InUI_CB_Sample].font->ft_color = UI[color_changed_colorblock_index].parameter;
 	}
-	else if(index_cb_type==InUI_CB_Type_BK)
+	else
 	{
-		UI[InUI_CB_Sample].font->bk_color = cb_rgb_false_color;
-		UI_CURSOR.temp_ui->font->bk_color = cb_rgb_false_color;
+		UI[InUI_CB_Sample].font->bk_color = UI[color_changed_colorblock_index].parameter;
 	}
-	UI_AddRender(&UI[InUI_CB_Sample]);
-	UI_AddRender(UI_CURSOR.temp_ui);
 	Other_CB_RGB_TrueOrFalse();
 }
 //挑选当前UI要更改的状态
@@ -341,15 +401,25 @@ void DOWN_CB_Font(tft_ui* u)
 {
 	color_changed_font_Index = u->value_num;
 	//选中UI的处理
-		//将当前状态(color_changed_font_Index)的字体复制上
-	uint16_t backup_font_index = color_changed_ui_index - UI_CURSOR.temp_ui->index_start;
-	UI_CURSOR.temp_ui->font->bk_color = color_changed_font[color_changed_font_Index][backup_font_index]->bk_color;
-	UI_CURSOR.temp_ui->font->ft_color = color_changed_font[color_changed_font_Index][backup_font_index]->ft_color;
-	
-		
-		//这里也缺乏整体处理
-	
-	
+		//选中多个UI
+	if(color_changed_combination==1)
+	{
+		uint16_t ui_index = 0;
+		for(int i=UI_CURSOR.temp_ui->index_start;i<=UI_CURSOR.temp_ui->index_end;i++)
+		{
+			UI[i].font->bk_color = color_changed_font[color_changed_font_Index][ui_index]->bk_color;
+			UI[i].font->ft_color = color_changed_font[color_changed_font_Index][ui_index]->ft_color;
+			UI_AddRender(&UI[i]);
+			ui_index++;
+		}
+	}
+	else//单个UI处理
+	{
+				//将当前状态(color_changed_font_Index)的字体复制上
+		uint16_t backup_font_index = color_changed_ui_index - UI_CURSOR.temp_ui->index_start;
+		UI_CURSOR.temp_ui->font->bk_color = color_changed_font[color_changed_font_Index][backup_font_index]->bk_color;
+		UI_CURSOR.temp_ui->font->ft_color = color_changed_font[color_changed_font_Index][backup_font_index]->ft_color;	
+	}
 	//更改示例图片
 	UI[InUI_CB_Sample].font->bk_color = UI_CURSOR.temp_ui->font->bk_color;
 	UI[InUI_CB_Sample].font->ft_color = UI_CURSOR.temp_ui->font->ft_color;
@@ -393,10 +463,6 @@ static void Other_ChangeCombination(void)
 		UI_AddRender(&UI[i]);
 	}
 }
-static void Other_Recover(void)
-{
-	
-}
 //更换当前想要更改颜色的UI
 void DOWN_CB_Choose(tft_ui* u)
 {
@@ -421,25 +487,42 @@ void DOWN_CB_Choose(tft_ui* u)
 			UI_AddRender(&UI[i]);
 			UI[i].is_present = 0;
 		}
+		//更改选中本UI
 		UI_CURSOR.temp_ui = &UI[s];
+		color_changed_font_temp[0].bk_color = UI_CURSOR.cursor_font->bk_color;
+		color_changed_font_temp[0].ft_color = UI_CURSOR.cursor_font->ft_color;
+		UI_AddRender(UI_CURSOR.temp_ui);
 		color_changed_ui_index = s;
 		return;
 	}
 	//指向单个UI
-		//恢复上一个UI
-	for(int i=0;i<4;i++)
-	{
-		UI_CURSOR.temp_ui->d_font[i] = color_changed_font[i][index];
-	}
-	UI_CURSOR.temp_ui->font = UI_CURSOR.temp_ui->d_font[0];
-	UI_CURSOR.temp_ui->Func_StateRule(UI_CURSOR.temp_ui);
-	UI_AddRender(UI_CURSOR.temp_ui);
-	UI_CURSOR.temp_ui->is_present = 0;
 			//最后一个UI的特殊处理
-	if(color_changed_ui_index==UI_CURSOR.temp_ui->index_end)
+	else if(color_changed_ui_index==UI_CURSOR.temp_ui->index_end)
 	{
+		//恢复上一个UI
+		for(int i=0;i<4;i++)
+		{
+			UI_CURSOR.temp_ui->d_font[i] = color_changed_font[i][index];
+		}
+		UI_CURSOR.temp_ui->font = UI_CURSOR.temp_ui->d_font[0];
+		UI_CURSOR.temp_ui->Func_StateRule(UI_CURSOR.temp_ui);
+		UI_AddRender(UI_CURSOR.temp_ui);
+		UI_CURSOR.temp_ui->is_present = 0;
+		//选中整体
 		Other_ChangeCombination();
 		return;
+	}
+	else
+	{
+		//恢复上一个UI
+		for(int i=0;i<4;i++)
+		{
+			UI_CURSOR.temp_ui->d_font[i] = color_changed_font[i][index];
+		}
+		UI_CURSOR.temp_ui->font = UI_CURSOR.temp_ui->d_font[0];
+		UI_CURSOR.temp_ui->Func_StateRule(UI_CURSOR.temp_ui);
+		UI_AddRender(UI_CURSOR.temp_ui);
+		UI_CURSOR.temp_ui->is_present = 0;
 	}
 		//指向下一个UI
 	color_changed_ui_index++;
@@ -454,7 +537,7 @@ void DOWN_CB_Choose(tft_ui* u)
 	color_changed_font_temp[index].size_height 	= UI_CURSOR.temp_ui->font->size_height;
 	color_changed_font_temp[index].size_width 	= UI_CURSOR.temp_ui->font->size_width;
 	color_changed_font_temp[index].bk_color = UI_CURSOR.cursor_font->bk_color;	
-	color_changed_font_temp[index].bk_color = UI_CURSOR.cursor_font->bk_color;
+	color_changed_font_temp[index].ft_color = UI_CURSOR.cursor_font->ft_color;
 	UI_CURSOR.temp_ui->font = &color_changed_font_temp[index];
 	for(int j=0;j<4;j++)
 	{
@@ -464,7 +547,11 @@ void DOWN_CB_Choose(tft_ui* u)
 	UI_CURSOR.temp_ui->readyto_present = 0;
 	UI_AddRender(UI_CURSOR.temp_ui);
 }
-
+void RIGHT_CB_Choose(tft_ui* u)
+{
+	RIGHT_CursorMove(u);
+	DOWN_CB_Font(&UI[InUI_CB_Font0]);
+}
 
 
 
@@ -477,6 +564,7 @@ void INS_EnterColorChange(void)
 		return;
 	}
 	//做页面跳转的准备
+	color_changed_colorblock_index = InUI_CB_ColorFix0;
 	color_changed_page = UI_CURSOR.ptr_page;
 	color_changed_font_Index = 0;
 	UI_CURSOR.parameter = InUI_CB_Choose;
@@ -485,7 +573,7 @@ void INS_EnterColorChange(void)
 	{
 		UI[i].font = &FONT[1];
 	}
-	UI[InUI_CB_Font0].font = &FONT[2];
+	UI[InUI_CB_Font0].d_font[0] = &FONT[2];
 	//CB_Sample
 	UI[InUI_CB_Sample].font->bk_color = UI_CURSOR.temp_font->bk_color;
 	UI[InUI_CB_Sample].font->ft_color = UI_CURSOR.temp_font->ft_color;
@@ -506,6 +594,16 @@ void INS_EnterColorChange(void)
   */
 void INS_ExitColorChange(void)
 {
+	//将字体归还
+	uint16_t font_index = 0;
+	for(int i=UI_CURSOR.temp_ui->index_start;i<=UI_CURSOR.temp_ui->index_end;i++)
+	{
+		for(int j=0;j<4;j++)
+		{
+			UI[i].d_font[j] = color_changed_font[j][font_index];
+		}
+		font_index++;
+	}
 	UI_ChangePage(color_changed_page);
 }
 void Init_ColorBox_UI(void)
@@ -518,6 +616,14 @@ void Init_ColorBox_UI(void)
 		{
 			color_changed_font[j][i] = &color_changed_font_temp[i];
 		}
+	}
+	//颜色初始化
+	uint32_t color_rgb888_a[] = {0xff4e20,0x40de5a,0xe29c45,0x4b5cc4,0xeaff56,0xff0097,0xfffbf0,0x392f41};
+	uint32_t color_rgb888_b[] = {0x0c8918,0xd9b611,0xbbcdc5,0x574266,0x8c4356,0x057748,0xe9bb1d,0xc0ebd7};
+	for(int i=0;i<8;i++)
+	{
+		COLOR_FIXED[i] = TFT_RGB888To565(color_rgb888_a[i]);
+		COLOR_RGB565[i] = TFT_RGB888To565(color_rgb888_b[i]);
 	}
 	
 	//字体配置
@@ -533,6 +639,8 @@ void Init_ColorBox_UI(void)
 	FONT[4] = TFTF_CreateFont((const char*)font_ASCII_PIXEL_3216,32,16,TFT_RGB888To565(0xc9d6df),TFT_RGB888To565(0xa6e3e9));
 	//	5	颜色选择框-更换要调整的UI(图标)
 	FONT[5] = TFTF_CreateFont((const char*)qyf_pic01_object_2424,24,24,TFT_RGB888To565(0x40514e),TFT_RGB888To565(0xa6e3e9));
+	//	6	颜色选择框-更换色块组(图标)
+	FONT[6] = TFTF_CreateFont((const char*)qyf_pic01_down_2424,24,24,TFT_RGB888To565(0x40514e),TFT_RGB888To565(0xa6e3e9));
 	
 	//UI配置
 	//		光标
@@ -570,6 +678,7 @@ void Init_ColorBox_UI(void)
 		UI[i].Func_Event_RIGHT = RIGHT_CursorMove;
 	}
 	UI[InUI_CB_Choose].Func_Event_LEFT = NULL_UI_Func;
+	UI[InUI_CB_Choose].Func_Event_RIGHT = RIGHT_CB_Choose;
 	UI[InUI_CB_Choose].Func_Event_DOWN = DOWN_CB_Choose;
 	//		颜色框-前景色		//front 36*24 下键选中固定颜色0 左键选中示例图片/数字 右键选中前景色 
 	UI[InUI_CB_Type_FT] = UI_CreateUI(SCREEN_WIDTH-36*4,1,&FONT[1],Render_CB_TEXT);
@@ -596,34 +705,27 @@ void Init_ColorBox_UI(void)
 	UI[InUI_CB_Type_Q_].Func_Event_RIGHT = NULL_UI_Func;
 	//		颜色框 	-固定颜色0	//外尺寸24*24 颜色16*16 颜色框2 上键返回前景色/背景色 左键UI_index-1 右键UI_index+1 下键确认
 	UI[InUI_CB_ColorFix0] = UI_CreateUI(54,26,&FONT[4],Render_CB_ColorFix);
-	UI[InUI_CB_ColorFix0].parameter = TFT_RGB888To565(0xff461f);
 	//			 	-固定颜色1	//颜色值保存在value中
 	UI[InUI_CB_ColorFix1] = UI_CreateUI(54+26*1,26,&FONT[4],Render_CB_ColorFix);
-	UI[InUI_CB_ColorFix1].parameter = TFT_RGB888To565(0x1685a9);
 	//			 	-固定颜色2
 	UI[InUI_CB_ColorFix2] = UI_CreateUI(54+26*2,26,&FONT[4],Render_CB_ColorFix);
-	UI[InUI_CB_ColorFix2].parameter = TFT_RGB888To565(0xffa631);
 	//			 	-固定颜色3
 	UI[InUI_CB_ColorFix3] = UI_CreateUI(54+26*3,26,&FONT[4],Render_CB_ColorFix);
-	UI[InUI_CB_ColorFix3].parameter = TFT_RGB888To565(0x00bc12);
 	//			 	-固定颜色4
 	UI[InUI_CB_ColorFix4] = UI_CreateUI(54+26*4,26,&FONT[4],Render_CB_ColorFix);
-	UI[InUI_CB_ColorFix4].parameter = TFT_RGB888To565(0xFFFFFF);
 	//			 	-固定颜色5	
 	UI[InUI_CB_ColorFix5] = UI_CreateUI(54+26*5,26,&FONT[4],Render_CB_ColorFix);
-	UI[InUI_CB_ColorFix5].parameter = TFT_RGB888To565(0xaa96da);
 	//			 	-固定颜色6	
 	UI[InUI_CB_ColorFix6] = UI_CreateUI(54+26*6,26,&FONT[4],Render_CB_ColorFix);
-	UI[InUI_CB_ColorFix6].parameter = TFT_RGB888To565(0xabdd8);
 	//			 	-固定颜色7	
 	UI[InUI_CB_ColorFix7] = UI_CreateUI(54+26*7,26,&FONT[4],Render_CB_ColorFix);
-	UI[InUI_CB_ColorFix7].parameter = TFT_RGB888To565(0x323232);
-	//			 	-不定的颜色	//下键跳出RGB565输入框
-	UI[InUI_CB_ColorUS] = UI_CreateUI(54+26*8,26,&FONT[4],Render_CB_ColorUS);
-	//				-旧颜色 	
-	UI[InUI_CB_ColorOld] = UI_CreateUI(54+26*9,26,&FONT[2],Render_CB_ColorFix);
-	UI[InUI_CB_ColorOld].parameter = UI[InUI_ColorBox].font->ft_color;
-	for(int i=InUI_CB_ColorFix0;i<=InUI_CB_ColorOld;i++)
+	for(int i=0;i<8;i++)
+	{
+		UI[InUI_CB_ColorFix0+i].parameter = COLOR_FIXED[i];
+	}
+	//				切换色块组
+	UI[InUI_CB_ColorChange] = UI_CreateUI(54+26*8,26,&FONT[6],Render_CB_Pic);
+	for(int i=InUI_CB_ColorFix0;i<=InUI_CB_ColorChange;i++)
 	{
 		UI[i].Func_Event_LEFT  = LEFT_CursorMove;
 		UI[i].Func_Event_RIGHT = RIGHT_CursorMove;
@@ -631,8 +733,13 @@ void Init_ColorBox_UI(void)
 		UI[i].Func_Event_UP	   = UP_CB_Color;
 	}
 	UI[InUI_CB_ColorFix0].Func_Event_LEFT = NULL_UI_Func;
-	UI[InUI_CB_ColorOld].Func_Event_RIGHT = NULL_UI_Func;
-	UI[InUI_CB_ColorUS].Func_Event_DOWN = DOWN_CB_ColorUS;
+	UI[InUI_CB_ColorChange].Func_Event_RIGHT = NULL_UI_Func;
+	UI[InUI_CB_ColorChange].Func_Event_DOWN = DOWN_CB_ColorChange;
+	//				RGB888入口
+	UI[InUI_CB_RGB] = UI_CreateUI(54+26*9,26,&FONT[4],Render_CB_ColorUS);
+	UI[InUI_CB_RGB].Func_Event_LEFT = LEFT_CursorMove;
+	UI[InUI_CB_RGB].Func_Event_DOWN = DOWN_CB_RGBEnter;
+	UI[InUI_CB_RGB].Func_Event_UP = UP_CB_Color;
 	//		InUI_CB_RGB_0x				//调色框第二行的RGB888输入框0x	28*24		仅是'0x'文本，不会被选中	
 	UI[InUI_CB_RGB_0x] = UI_CreateUI(54,26,&FONT[1],Render_CB_TEXT);
 	UI[InUI_CB_RGB_0x].parameter = 2;
@@ -684,8 +791,8 @@ void Render_Page0(void)
 
 void Init_ColorBox_Page(void)
 {
-	uint16_t indexs_ofPage0[22];
-	for(int i=0;i<=21;i++)
+	uint16_t indexs_ofPage0[21];
+	for(int i=0;i<=20;i++)
 	{
 		indexs_ofPage0[i] = i;
 	}
