@@ -118,7 +118,7 @@ void Init_TFT(void)
 	TFT_SetRect(0,0,D_TFT_WIDTH,D_TFT_HEIGHT);
 	for(int i=0;i<D_TFT_WIDTH*D_TFT_HEIGHT;i++)
 	{
-		TFT_SendColor(0xad55);
+		TFT_SendColor(0x0);
 	}
 	
 }

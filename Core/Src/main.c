@@ -22,9 +22,7 @@
 #include "gpio.h"
 #include "qy_printf.h"
 #include "TFT_ILI9341.h"
-#include "TFT_font.h"
-#include "TFT_UI.h"
-#include "UI_Instance_example.h"
+#include "UI_Instance.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -96,9 +94,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   QY_Printf("Hello! \r\n");
   Init_TFT();
-	TFTF_Test();
-	
-	INS_Test();
+  INS_Test();
 
   /* USER CODE END 2 */
 

@@ -3,7 +3,7 @@
 #include "usart.h"
 #include "TFT_UI.h"
 #include "TFT_font.h"
-#include "UI_Instance_example.h"
+#include "UI_Instance.h"
 #include "UI_Ins_ColorBox.h"
 
 extern uint8_t buff;

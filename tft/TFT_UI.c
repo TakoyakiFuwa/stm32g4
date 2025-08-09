@@ -1,10 +1,9 @@
 #include "TFT_UI.h"
 #include "TFT_font.h"		//提供字体结构体，不可删
 #include "qy_printf.h"		//提供QY_Printf	用于串口调试
-#include "UI_Instance_example.h"	//"Instance"实例化 提供INS_Init_UI()和INS_Init_Page()
-									//example表示只是提供参考例程，真正项目应该创建UI_Instance.h/c(UI实例化)文件
-
-//
+#include "UI_Index.h"
+#include "UI_Instance.h"	//"Instance"实例化 提供INS_Init_UI()和INS_Init_Page()
+									
 /*	在TFT_font中的基础上实现了渲染框架的搭建
  *	参考面向对象的方式，创建了 page 和 UI 作为"class"类
  *	通过调用 UI_Create- 来实现实例化	
@@ -14,12 +13,12 @@
  *			——2025/8/6-9:22.秦羽
  */
 
-extern const char font_ASCII_PIXEL_4020[][100];
+extern const char font_ASCII_PIXEL_2412[][36];
 /*  全局变量  */
 //光标，项目中用到的全部字体/UI/页面
 tft_pointer UI_CURSOR;				//光标
 tft_font 	FONT[300];				//字体
-tft_ui 		UI[100];				//UI
+tft_ui 		UI[200];				//UI
 tft_page 	PAGE[20];				//页面
 
 /*  渲染队列  */
@@ -47,18 +46,6 @@ void NULL_VOID_Func(void)
 {
 	QY_Printf("\r\n 警告！调用空函数指针 \r\n");
 }
-void NULL_ChangeState(struct tft_ui* u,int8_t state)
-{
-	if(state<0||state>=4)
-	{
-//		QY_Printf("\r\n 当前UI进入异常状态 \r\n");
-		return;
-	}
-	if(u->font!=UI_CURSOR.cursor_font)
-	{
-		u->font = u->d_font[state];
-	}
-}
 /**@brief  UI初始化，需要放在循环前(常规初始化位置就可以)
   *@param  void
   *@retval void
@@ -69,7 +56,9 @@ void Init_UI(void)
 	//创建充当"空指针"的内容
 	null_ui = UI_CreateUI(0,0,&FONT[0],NULL_UI_Func);
 	null_ui.is_present = 100;	//作为渲染队列尾的标志位
-	null_font = TFTF_CreateFont((const char*)font_ASCII_PIXEL_4020,999,999,0,0);
+	null_font = TFTF_CreateFont((const char*)font_ASCII_PIXEL_2412,999,999,0,0);
+	FONT[InFT_Null] = null_font;
+	UI[InUI_Null] = UI_CreateUI(999,999,&FONT[InFT_Null],NULL_UI_Func);
 	//UI创建接口
 	UI_CURSOR.cursor_font = INS_Init_UI();
 	//页面创建接口
@@ -100,10 +89,8 @@ void Init_UI(void)
   *@add	   如果被UI_ChangePage中断打断有可能出现显示bug
   *		   如果真的有用UI_ChangePage中断打断CircleRender_UI的需求，提醒我再改一下
   */
-int bug_Bad_solution = 1;
 void CircleRender_UI(void)
 {
-	bug_Bad_solution = 1;
 	//遍历函数渲染队列
 	for(int i=0;QUEUE_RENDER_FUNC[i]!=NULL_VOID_Func;i++)
 	{
@@ -118,7 +105,7 @@ void CircleRender_UI(void)
 	//遍历UI渲染队列
 	for(int i=0;i<200;i++)
 	{
-		if(QUEUE_RENDER_UI[i]->is_present==100 || bug_Bad_solution==0)//遍历到队列尾，退出
+		if(QUEUE_RENDER_UI[i]->is_present==100)//遍历到队列尾，退出
 		{
 			break;
 		}
@@ -161,7 +148,6 @@ tft_ui UI_CreateUI(uint16_t x,uint16_t y,tft_font* font,void (*Func_Render)(stru
 	u.is_present = 0;
 	u.Func_Render_N = Func_Render;
 	//绑定空操作函数
-	u.Func_ChangeState 	= NULL_ChangeState;
 	u.Func_StateRule	= NULL_UI_Func;
 	u.Func_Event_UP 	= NULL_UI_Func;
 	u.Func_Event_DOWN 	= NULL_UI_Func;
@@ -183,7 +169,7 @@ tft_ui UI_CreateUI(uint16_t x,uint16_t y,tft_font* font,void (*Func_Render)(stru
   *@param  new_ui 要绑定的新UI
   *@retval void
   *@add	   这里的光标Cursor提示方式是用背景色来作为提示
-*		   也可以通过修改其他属性来实现光标提示的功能
+  *		   也可以通过修改其他属性来实现光标提示的功能
   */
 void UI_Cursor_ChangeUI(tft_ui* new_ui)
 {
@@ -285,7 +271,33 @@ void UI_ChangePage(tft_page* new_page)
 	//绑定指针
 	UI_Cursor_ChangeUI(new_page->start_ui);
 	UI_CURSOR.ptr_page = new_page;
-	bug_Bad_solution = 0;
+}
+
+/*  使用率较高，可能对创建页面有帮助的函数  */
+/**@brief  字符串，把_string赋给target
+  */
+void Other_StringCpy(char* target,const char* _string)
+{
+	int i=0;
+	for(;_string[i]!='\0';i++)
+	{
+		target[i] = _string[i];
+	}
+	target[i] = '\0';
+}
+/**@brief  光标左移
+  *@add	   用光标的parameter属性来存储UI的下标
+  *		   很多左右相邻的UI元素 其下标也是相邻的
+  */
+void LEFT_CursorMove(tft_ui* u)
+{
+	UI_Cursor_ChangeUI(&UI[--UI_CURSOR.parameter]);
+}
+/**@brief  光标右移
+  */
+void RIGHT_CursorMove(tft_ui* u)
+{
+	UI_Cursor_ChangeUI(&UI[++UI_CURSOR.parameter]);
 }
 
 

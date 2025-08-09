@@ -144,7 +144,20 @@ void TFTF_DrawLine(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2,uint16_t c
 }
 
 /*  关于取模显示的部分  */
-
+/**@brief  从RGB888转换成RGB565
+  *@param  RGB888 颜色代码
+  *@retval RGB565颜色代码
+  */
+uint16_t TFTF_RGB888To565(uint32_t RGB888)
+{
+	uint16_t RGB565 = 0;
+	RGB565 = RGB888>>19;
+	RGB565 = RGB565<<6;
+	RGB565 |= ((RGB888>>10)&0x3F);
+	RGB565 = RGB565<<5;
+	RGB565 |= ((RGB888>>3)&0x1F);
+	return RGB565;
+}
 /**@brief  创建一个字体
   *@param  - 字体参数
   */

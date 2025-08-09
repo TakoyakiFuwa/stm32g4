@@ -1,11 +1,19 @@
-#ifndef __UI_INS_COLORBOX_H__
-#define __UI_INS_COLORBOX_H__
-#include "TFT_UI.h"
-/* 使用时把这些定义添加到UI_Index.h中 */
+#ifndef __UI_INDEX_H__
+#define __UI_INDEX_H__
 
-//字体配置
-/*
+/*	全局变量 (TFT_UI.c)
+extern tft_pointer 	UI_CURSOR;				//光标
+extern tft_font 	FONT[300];				//字体
+extern tft_ui 		UI[200];				//UI
+extern tft_page 	PAGE[20];				//页面
+ */
+
+/*  字体  */
+	//空字体				0		TFT_UI.h/c
+#define		InFT_Null			0
+	//光标字体			1		UI_Instance.h/c
 #define		InFT_Cursor			1
+	//调色框用到的字体	2~20	UI_Ins_ColorBox.h/c
 #define		InFT_ColorBox		2		//调色框
 #define		InFT_CB_On			3		//选中的配色
 #define		InFT_CB_Sample		4		//示例图片	
@@ -13,10 +21,37 @@
 #define		InFT_ICON_0			6		//图标-更换要调整的UI
 #define		InFT_ICON_1			7		//图标-更换色块组
 #define		InFT_CB_FONT		8		//字体示例
-*/
+//#define	InFT_CB_End			20		//ColorBox字体最大数量
+	//测试页面用到的字体	21~80	UI_Ins_TestPage.h/c
+	/*
+#define		InFT_TP_Hour0		21
+#define		InFT_TP_Hour1		22
+#define		InFT_TP_Hour2		23
+#define		InFT_TP_Hour3		24
+#define		InFT_TP_Minute0		25
+#define		InFT_TP_Minute1		26
+#define		InFT_TP_Minute2		27
+#define		InFT_TP_Minute3		28
+#define		InFT_TP_Second0		29
+#define		InFT_TP_Second1		30
+#define		InFT_TP_Second2		31
+#define		InFT_TP_Second3		32
+#define		InFT_TP_MS0			33
+#define		InFT_TP_MS1			34
+#define		InFT_TP_MS2			35
+#define		InFT_TP_MS3			36
+#define		InFT_TP_t_HtM		37		//小时和分钟之间的冒号
+#define		InFT_TP_t_MtS		38		//分钟和秒之间的冒号
+#define		InFT_TP_t_StMS		39		//秒和毫秒之间的冒号
+	*/
+//#define	InFT_TP_End			80		//TestPage字体最大数量
 
-//UI配置
-/*
+
+
+/*  UI  */
+	//空UI				0		TFT_UI.h/c
+#define		InUI_Null			0
+	//调色框的组成内容	1~50	UI_Ins_ColorBox.h/c
 #define 	InUI_ColorBox		1		//不会被光标选中					51*WIDTH 	是更改颜色的界面  
 #define 	InUI_CB_Sample		2		//调色框中最左侧的样本图片  		51*51		是颜色示例
 #define		InUI_CB_Choose		3
@@ -49,16 +84,24 @@
 #define		InUI_CB_RGB_False	30		//RGB888 取消
 #define 	InUI_CB_Line2_BK	31		//调色框第二行背景
 #define		InUI_CB_FONTChange	32		//调色框第二行，更改字体			120*24		左右键更换字体，下键确认，上键返回
-*/
+//#define	InUI_CB_End			50		//分配给ColorBox页面的UI就到50
+	//测试页面		51~100		UI_Ins_TestPage.h/c
+	/*
+#define		InUI_TP_Hour		51		//左右来回切换 上下调整数值
+#define		InUI_TP_Minute		52
+#define		InUI_TP_Second		53
+#define		InUI_TP_MS			54		
+#define		InUI_TP_t_HtM		55		//小时和分钟之间的冒号
+#define		InUI_TP_t_MtS		56		//分钟和秒之间的冒号
+#define		InUI_TP_t_StMS		57		//秒和毫秒之间的冒号
+	*/
+//#define 	InUI_TP_End			100		//分配给TestPage页面的UI就到100
 
 
-/*  接口  */
-void ColorBox_Enter(void);
-void ColorBox_Exit(void);
-void Init_UI_ColorBox(void);
-void Init_Page_ColorBox(void);
 
-
+/*  页面  */
+#define		InPG_ColorBox		0
+//#define		InPG_TestPage		1
 
 
 

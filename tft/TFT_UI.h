@@ -59,9 +59,12 @@ typedef struct tft_ui{
 	//以下是用户交互函数，应当绑定具体按键（按键监听处理）
 	//注意，	扩展时应当在UI_CreateUI中添加 = NULL_UI_Func
 	//		原因参考NULL_UI_Func
-	void (*Func_ChangeState)(struct tft_ui* self,int8_t state);//更改当前状态
-	void (*Func_StateRule)(struct tft_ui* self);	//检查自身状态并适配
-													//UI的状态可能和某些值相关联，可能会发生修改值
+	void (*Func_StateRule)(struct tft_ui* self);	//检查自身状态并更改
+	//	如果存在光标不显示，需要把这个加到状态更改函数内
+	//		if(u->font==UI_CURSOR.cursor_font)
+	//		{
+	//			return;
+	//		}
 	void (*Func_Event_UP)(struct tft_ui* self);		//上移
 	void (*Func_Event_DOWN)(struct tft_ui* self);	//下移
 	void (*Func_Event_LEFT)(struct tft_ui* self);	//左移
@@ -87,9 +90,6 @@ extern tft_page 	PAGE[20];				//页面
  */
 
 /*  UI相关函数  */
-void NULL_ChangeState(struct tft_ui* u,int8_t state);
-void 	NULL_UI_Func(struct tft_ui* none);
-void 	NULL_VOID_Func(void);
 void 	Init_UI(void);
 void 	CircleRender_UI(void);
 void 	UI_AddRender(tft_ui* u);
@@ -99,8 +99,12 @@ void 	UI_Cursor_Refresh(void);
 void 	UI_CreatePage(tft_page* page,uint16_t* ui_index,uint16_t number_ofUI,tft_ui* start_ui,void (*Page_Render_N)(void));
 void	UI_ChangePage(tft_page* new_page);
 
-//测试接口
-//void TFTU_Test(void);
+/*  使用率较高，可能对创建页面有帮助的函数  */
+void 	NULL_UI_Func(struct tft_ui* none);
+void 	NULL_VOID_Func(void);
+void 	Other_StringCpy(char* target,const char* _string);
+void 	LEFT_CursorMove(tft_ui* u);
+void 	RIGHT_CursorMove(tft_ui* u);
 
 #endif
 
