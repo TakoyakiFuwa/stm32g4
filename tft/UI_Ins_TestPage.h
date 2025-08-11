@@ -41,6 +41,8 @@
 #define		InUI_TP_Char		71		//字符本身
 #define		InUI_TP_C_Icon		72		//停止/开始图标
 #define		InUI_TP_C_Botton	73		//开始/停止按键
+	//作为背景板
+#define		InUI_TP_Background	80
 
 
 /*  PAGE  1 */

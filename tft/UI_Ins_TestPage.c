@@ -19,10 +19,10 @@ extern const char qyf_pic01_stop_2424[];
 extern const char qyf_pic01_github_6464[];					//github图标		黑白	64*64
 
 //渲染
-void Render_Page1(void)
+void Render_TP_Background(tft_ui* u)
 {
-	UI_CURSOR.parameter = InUI_TP_Hour;
-	TFTF_DrawRect(0,SCREEN_HEIGHT-52,SCREEN_WIDTH,52,0x0);
+	UI_CURSOR.parameter = InUI_TP_TR_Start;
+	TFTF_DrawRect(0,0,SCREEN_WIDTH,SCREEN_HEIGHT,0);
 }
 void Render_Clock_Num(tft_ui* u)
 {
@@ -110,17 +110,120 @@ void DOWN_TP_ClockNum(tft_ui* u)
 	u->value_num--;
 	UI_AddRender(u);
 }
-void Left_TP_Hour(tft_ui* u)
+void LR_TP_toStart(tft_ui* u)
 {
-	UI_CURSOR.parameter = InUI_TP_MS;
-	UI_Cursor_ChangeUI(&UI[InUI_TP_MS]);
+	UI_Cursor_ChangeUI(&UI[InUI_TP_TR_Start]);
+	UI_CURSOR.parameter = InUI_TP_TR_Start;
 }
-void Right_TP_MS(tft_ui* u)
+void StateRule_TP_TR_Start(tft_ui* u)
 {
-	UI_CURSOR.parameter = InUI_TP_Hour;
+	if(u->font!=UI_CURSOR.cursor_font)
+	{
+		if(u->value_num==0)
+		{
+			u->font = u->d_font[0];
+		}
+		else
+		{
+			u->font = u->d_font[1];
+		}
+	}
+	u->d_font[2]->bk_color = u->font->bk_color;
+	u->d_font[2]->ft_color = u->font->ft_color;
+	if(u->value_num==0)
+	{
+		Other_StringCpy(u->value_text,"Start");
+		u->d_font[2]->font_lib = (const char*)qyf_pic01_start_2424;
+	}
+	else
+	{
+		Other_StringCpy(u->value_text,"Stop_");
+		u->d_font[2]->font_lib = (const char*)qyf_pic01_stop_2424;
+	}
+}
+void DOWN_TP_TR_Start(tft_ui* u)
+{
+	if(u->value_num==0)
+	{
+		u->value_num = 1;
+	}
+	else
+	{
+		u->value_num = 0;
+	}
+	u->Func_StateRule(u);
+	UI_AddRender(u);
+}
+void DOWN_TP_TR_Reset(tft_ui* u)
+{
+	for(int i=InUI_TP_Hour;i<=InUI_TP_MS;i++)
+	{
+		UI[i].value_num = 0 ;
+		UI[i].Func_StateRule(&UI[i]);
+		UI_AddRender(&UI[i]);
+	}
+}
+void DOWN_TP_TR_Set(tft_ui* u)
+{
 	UI_Cursor_ChangeUI(&UI[InUI_TP_Hour]);
+	UI_CURSOR.parameter = InUI_TP_Hour;
 }
-
+void RIGHT_TP_TR_Set(tft_ui* u)
+{
+	UI_Cursor_ChangeUI(&UI[InUI_TP_ICON]);
+}	
+void LEFT_TP_ICON(tft_ui* u)
+{
+	UI_Cursor_ChangeUI(&UI[InUI_TP_TR_Set]);
+	UI_CURSOR.parameter = InUI_TP_TR_Set;
+}
+void RIGHT_TP_ICON(tft_ui* u)
+{
+	UI_Cursor_ChangeUI(&UI[InUI_TP_SetClock]);
+}
+void LEFT_TP_SetClock(tft_ui* u)
+{
+	UI_Cursor_ChangeUI(&UI[InUI_TP_ICON]);
+}
+void RIGHT_TP_SetClock(tft_ui* u)
+{
+	UI_Cursor_ChangeUI(&UI[InUI_TP_C_Botton]);
+}
+void DOWN_TP_SetClock(tft_ui* u)
+{
+	UI_Cursor_ChangeUI(&UI[InUI_TP_ClockH]);
+	UI_CURSOR.parameter = InUI_TP_ClockH;
+}
+void LR_TP_toSetClock(tft_ui* u)
+{
+	UI_Cursor_ChangeUI(&UI[InUI_TP_SetClock]);
+}
+void LEFT_TP_C_Botton(tft_ui* u)
+{
+	UI_Cursor_ChangeUI(&UI[InUI_TP_SetClock]);
+}
+void RIGHT_TP_C_Botton(tft_ui* u)
+{
+	UI_Cursor_ChangeUI(&UI[InUI_TP_Num]);
+}
+void StateRule_TP_C_Botton(tft_ui* u)
+{
+	if(u->value_num==0)
+	{
+		Other_StringCpy(u->value_text,"START");
+		UI[InUI_TP_C_Icon].font->font_lib = (const char*)qyf_pic01_start_2424;
+	}
+	else
+	{
+		Other_StringCpy(u->value_text,"STOP_");
+		UI[InUI_TP_C_Icon].font->font_lib = (const char*)qyf_pic01_stop_2424;
+	}
+	UI_AddRender(&UI[InUI_TP_C_Icon]);
+}
+void LEFT_TP_Num(tft_ui* u)
+{
+	UI_Cursor_ChangeUI(&UI[InUI_TP_C_Botton]);
+}
 
 
 //独立初始化
@@ -155,8 +258,8 @@ void Init_TP_Timer(void)
 		UI[InUI_TP_Hour+i].d_font[3] = &FONT[index_font];
 	}
 		//特殊处理
-	UI[InUI_TP_Hour].Func_Event_LEFT = Left_TP_Hour;	//从小时左键到毫秒
-	UI[InUI_TP_MS].Func_Event_RIGHT = Right_TP_MS;		//从毫秒右键到小时
+	UI[InUI_TP_Hour].Func_Event_LEFT = LR_TP_toStart;
+	UI[InUI_TP_MS].Func_Event_RIGHT =  LR_TP_toStart;	
 	UI[InUI_TP_MS].Func_StateRule = StateRule_Clock_MS; //ms每隔25更换字体(状态)
 	//时分秒中间的标点
 	for(int i=0;i<3;i++)
@@ -192,7 +295,8 @@ void Init_TP_Timer(void)
 	FONT[++index_font] = TFTF_CreateFont((const char*)qyf_pic01_stop_2424,24,24,UI[InUI_TP_TR_Start].d_font[1]->ft_color,UI[InUI_TP_TR_Start].d_font[1]->bk_color);
 	UI[InUI_TP_TR_Start].d_font[2] = &FONT[index_font];			//用于绑定图标
 		//交互绑定
-
+	UI[InUI_TP_TR_Start].Func_StateRule = StateRule_TP_TR_Start;
+	UI[InUI_TP_TR_Start].Func_Event_DOWN = DOWN_TP_TR_Start;
 	//reset
 	FONT[++index_font] = TFTF_CreateFont((const char*)font_ASCII_PIXEL_2412,24,12,TFTF_RGB888To565(0xeaf6f6),TFTF_RGB888To565(0x66bfbf));
 	UI[InUI_TP_TR_Reset] = UI_CreateUI(timer_x+98,timer_y+45,&FONT[index_font],Render_TextWithLine);	//5+12*5+24+8=97
@@ -201,11 +305,20 @@ void Init_TP_Timer(void)
 	Other_StringCpy(UI[InUI_TP_TR_Reset].value_text,"Reset");
 	UI[InUI_TP_TR_Reset].index_start = InUI_TP_Timer_F;
 	UI[InUI_TP_TR_Reset].index_end = InUI_TP_TR_Reset;
+		//交互绑定
+	UI[InUI_TP_TR_Reset].Func_Event_DOWN = DOWN_TP_TR_Reset;
 	//set
 	FONT[++index_font] = TFTF_CreateFont((const char*)qyf_pic01_setting_2424,24,24,TFTF_RGB888To565(0xeaf6f6),TFTF_RGB888To565(0x66bfbf));
 	UI[InUI_TP_TR_Set] = UI_CreateUI(timer_x+163,timer_y+45,&FONT[index_font],Render_Pic);
-	
-	
+		//交互绑定
+	for(int i=InUI_TP_TR_Start;i<=InUI_TP_TR_Set;i++)
+	{
+		UI[i].Func_Event_LEFT = LEFT_CursorMove;
+		UI[i].Func_Event_RIGHT = RIGHT_CursorMove;
+	}
+	UI[InUI_TP_TR_Start].Func_Event_LEFT = NULL_UI_Func;
+	UI[InUI_TP_TR_Set].Func_Event_RIGHT = RIGHT_TP_TR_Set;
+	UI[InUI_TP_TR_Set].Func_Event_DOWN = DOWN_TP_TR_Set;
 	
 	QY_Printf("\r\n Init_TP_Timer 创建完成，字体占用%d~%d \r\n",InFT_Timer_Start,index_font);
 }
@@ -227,6 +340,22 @@ void Init_TP_Clock(void)
 	}
 	UI[InUI_TP_ClockH].value_num = 10;
 	UI[InUI_TP_ClockMin].value_num = 41;
+		//属性初始化
+	for(int i=InUI_TP_ClockH;i<=InUI_TP_ClockSign;i++)
+	{
+		UI[i].index_start = InUI_TP_ClockH;
+		UI[i].index_end = InUI_TP_ClockSign;
+	}
+	//交互
+	for(int i=0;i<4;i++)
+	{
+		UI[InUI_TP_ClockH+i].Func_Event_DOWN = DOWN_TP_ClockNum;
+		UI[InUI_TP_ClockH+i].Func_Event_UP = UP_TP_ClockNum;
+		UI[InUI_TP_ClockH+i].Func_Event_LEFT = LEFT_CursorMove;
+		UI[InUI_TP_ClockH+i].Func_Event_RIGHT = RIGHT_CursorMove;
+	}
+	UI[InUI_TP_ClockH].Func_Event_LEFT = LR_TP_toSetClock;
+	UI[InUI_TP_ClockMS].Func_Event_RIGHT = LR_TP_toSetClock;
 	//中间的标点
 	FONT[++index_font] = TFTF_CreateFont((const char*)font_ASCII_PIXEL_3216,32,16,0,0xFFFF);
 	UI[InUI_TP_ClockSign] = UI_CreateUI(clock_x+42,clock_y+10,&FONT[index_font],Render_TP_ClockSign);
@@ -237,6 +366,10 @@ void Init_TP_Clock(void)
 	UI[InUI_TP_SetClock].parameter = 10;
 	FONT[++index_font] = TFTF_CreateFont((const char*)qyf_pic01_setting_2424,24,24,TFTF_RGB888To565(0x756c83),TFTF_RGB888To565(0xb9e1dc));
 	UI[InUI_TP_SetClock].d_font[2] = &FONT[index_font];
+		//交互
+	UI[InUI_TP_SetClock].Func_Event_LEFT = LEFT_TP_SetClock;
+	UI[InUI_TP_SetClock].Func_Event_RIGHT = RIGHT_TP_SetClock;
+	UI[InUI_TP_SetClock].Func_Event_DOWN = DOWN_TP_SetClock;
 	
 	QY_Printf("\r\n Init_TP_Timer 创建完成，字体占用%d~%d \r\n",InFT_Clock_Start,index_font);
 }
@@ -246,7 +379,8 @@ void Init_TP_Icon(void)
 	uint16_t index_font = InFT_TP_Icon_Start-1;
 	FONT[++index_font] = TFTF_CreateFont((const char*)qyf_pic01_github_6464,64,64,TFTF_RGB888To565(0xb9e1dc),TFTF_RGB888To565(0xf38181));
 	UI[InUI_TP_ICON] = UI_CreateUI(201,0,&FONT[index_font],Render_Pic);
-	
+	UI[InUI_TP_ICON].Func_Event_LEFT = LEFT_TP_ICON;
+	UI[InUI_TP_ICON].Func_Event_RIGHT = RIGHT_TP_ICON;
 	
 	QY_Printf("\r\n Init_TP_Icon 创建完成，字体占用%d~%d \r\n",InFT_TP_Icon_Start,index_font);
 }
@@ -257,6 +391,10 @@ void Init_TP_Num(void)
 	UI[InUI_TP_Num] = UI_CreateUI(10,180,&FONT[InFT_TP_Num],Render_Clock_Num);
 	UI[InUI_TP_Num].parameter = 6;
 	UI[InUI_TP_Num].value_num = 0;
+		//交互
+	UI[InUI_TP_Num].Func_Event_DOWN = DOWN_TP_ClockNum;
+	UI[InUI_TP_Num].Func_Event_UP = UP_TP_ClockNum;
+	UI[InUI_TP_Num].Func_Event_LEFT = LEFT_TP_Num;
 }
 /*  一直刷新的字符  */
 void Init_TP_Char(void)
@@ -276,8 +414,19 @@ void Init_TP_Char(void)
 	FONT[++index_font] = TFTF_CreateFont((const char*)font_ASCII_PIXEL_2412,24,12,TFTF_RGB888To565(0xc7f5fe),TFTF_RGB888To565(0x071a52));
 	UI[InUI_TP_C_Botton] = UI_CreateUI(x_char,y_char+36,&FONT[index_font],Render_Text);
 	UI[InUI_TP_C_Botton].parameter = 5;
+	UI[InUI_TP_C_Botton].value_num = 1;
 	Other_StringCpy(UI[InUI_TP_C_Botton].value_text,"Stop_");
-	
+		//属性初始化
+	for(int i=InUI_TP_Char;i<=InUI_TP_C_Botton;i++)
+	{
+		UI[i].index_start = InUI_TP_Char;
+		UI[i].index_end = InUI_TP_C_Botton;
+	}
+		//交互
+	UI[InUI_TP_C_Botton].Func_Event_DOWN = DOWN_TP_TR_Start;
+	UI[InUI_TP_C_Botton].Func_StateRule = StateRule_TP_C_Botton;
+	UI[InUI_TP_C_Botton].Func_Event_RIGHT = RIGHT_TP_C_Botton;
+	UI[InUI_TP_C_Botton].Func_Event_LEFT =  LEFT_TP_C_Botton;
 	
 	QY_Printf("\r\n Init_TP_Char 创建完成，字体占用%d~%d \r\n",InFT_TP_Char_Start,index_font);
 }
@@ -286,6 +435,8 @@ void Init_TP_Char(void)
 
 void Init_UI_TestPage(void)
 {
+	//背景板
+	UI[InUI_TP_Background] = UI_CreateUI(0,0,&FONT[0],Render_TP_Background);
 	//秒表初始化
 	Init_TP_Timer();
 	//时钟
@@ -301,7 +452,8 @@ void Init_UI_TestPage(void)
 void Init_Page_TestPage(void)
 {
 	uint16_t page1_ui_indexs[] = {
-		InUI_TP_Hour		
+		InUI_TP_Background
+		,InUI_TP_Hour		
 		,InUI_TP_Minute		
 		,InUI_TP_Second		
 		,InUI_TP_MS			
@@ -325,7 +477,7 @@ void Init_Page_TestPage(void)
 		,InUI_TP_C_Icon
 		,InUI_TP_C_Botton
 	};
-	UI_CreatePage(&PAGE[InPG_TestPage],page1_ui_indexs,sizeof(page1_ui_indexs)/sizeof(uint16_t),&UI[InUI_TP_Hour],Render_Page1);
+	UI_CreatePage(&PAGE[InPG_TestPage],page1_ui_indexs,sizeof(page1_ui_indexs)/sizeof(uint16_t),&UI[InUI_TP_TR_Start]);
 }
 void TestPage_ClockCircle(void)
 {
@@ -379,12 +531,14 @@ void TestPage_ClockCircle(void)
 	//一直刷新的数字
 	UI_AddRender(&UI[InUI_TP_Num]);
 	//字符变化
-	if(++(UI[InUI_TP_Char].value_text[0])>=' '+95)
+	if(UI[InUI_TP_C_Botton].value_num!=0)
 	{
-		UI[InUI_TP_Char].value_text[0] = ' ';
+		if(++(UI[InUI_TP_Char].value_text[0])>=' '+95)
+		{
+			UI[InUI_TP_Char].value_text[0] = ' ';
+		}
+		UI_AddRender(&UI[InUI_TP_Char]);	
 	}
-	UI_AddRender(&UI[InUI_TP_Char]);
-		
 	
 }
 

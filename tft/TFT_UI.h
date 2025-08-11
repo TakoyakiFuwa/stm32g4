@@ -18,7 +18,6 @@
 typedef struct tft_page{
 	uint16_t ui_index[100];			//该页面绑定的UI下标，999为不绑定，详见UI_CreatePage
 	struct tft_ui* start_ui;		//光标换页时，在这页第一个关联的UI
-	void (*Page_Render_N)(void);	//_N同tft_ui.Func_Render_N，用于渲染页面中的固定内容如背景/边框等
 }tft_page;
 //UI，页面(page)的基础组件
 typedef struct tft_ui{
@@ -96,7 +95,7 @@ void 	UI_AddRender(tft_ui* u);
 tft_ui	UI_CreateUI(uint16_t x,uint16_t y,tft_font* font,void (*Func_Render)(struct tft_ui* self));
 void 	UI_Cursor_ChangeUI(tft_ui* new_ui);
 void 	UI_Cursor_Refresh(void);
-void 	UI_CreatePage(tft_page* page,uint16_t* ui_index,uint16_t number_ofUI,tft_ui* start_ui,void (*Page_Render_N)(void));
+void 	UI_CreatePage(tft_page* page,uint16_t* ui_index,uint16_t number_ofUI,tft_ui* start_ui);
 void	UI_ChangePage(tft_page* new_page);
 
 /*  使用率较高，可能对创建页面有帮助的函数  */

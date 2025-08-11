@@ -29,9 +29,7 @@ tft_ui* QUEUE_RENDER_UI[200];	//渲染UI队列 200算是渲染缓冲区大小，
 uint16_t queue_render_ui_index=0;		//渲染队列队尾(可添加渲染的位置)
 tft_ui	 	null_ui;	//用于表示UI渲染的队列尾，变相实现空指针,is_present=100 表示空
 tft_font	null_font;	//表示未绑定font size_width=size_height = 999;
-//渲染函数队列，仅用于页面刷新时将页面刷新函数放进渲染队列中
-void (*QUEUE_RENDER_FUNC[100])(void);	//渲染函数队列
-uint16_t queue_render_func_index=0;
+
 
 /*  函数  */
 /**@brief  用于充当函数指针的空指针
@@ -73,11 +71,6 @@ void Init_UI(void)
 	UI_CURSOR.parameter = 0;
 	UI_CURSOR.temp_ui = UI_CURSOR.ptr_ui;
 	//创建渲染队列
-		//函数渲染
-	for(int i=0;i<100;i++)
-	{
-		QUEUE_RENDER_FUNC[i] = NULL_VOID_Func;
-	}
 		//UI渲染
 	for(int i=0;i<200;i++)
 	{
@@ -90,22 +83,9 @@ void Init_UI(void)
   *@param  void
   *@retval void
   *@add    放在循环中或者定时器定时调用，tft_ui.Func_Render_N只在这里直接调用
-  *@add	   如果被UI_ChangePage中断打断有可能出现显示bug
-  *		   如果真的有用UI_ChangePage中断打断CircleRender_UI的需求，提醒我再改一下
   */
 void CircleRender_UI(void)
 {
-	//遍历函数渲染队列
-	for(int i=0;QUEUE_RENDER_FUNC[i]!=NULL_VOID_Func;i++)
-	{
-		if(i>=100)
-		{
-			break;
-		}
-		QUEUE_RENDER_FUNC[i]();
-		QUEUE_RENDER_FUNC[i] = NULL_VOID_Func;
-	}
-	queue_render_func_index = 0;
 	//遍历UI渲染队列
 	for(int i=0;i<200;i++)
 	{
@@ -210,7 +190,7 @@ void UI_Cursor_Refresh(void)
   *		   所以UI_CreateUI可以用返回值的写法，而UI_CreatePage不可以
   *@add	   总之出问题首先考虑结构体中的数组问题
   */
-void UI_CreatePage(tft_page* page,uint16_t* ui_index,uint16_t number_ofUI,tft_ui* start_ui,void (*Page_Render_N)(void))
+void UI_CreatePage(tft_page* page,uint16_t* ui_index,uint16_t number_ofUI,tft_ui* start_ui)
 {
 	uint16_t i=0;
 	for(;i<number_ofUI;i++)
@@ -222,7 +202,6 @@ void UI_CreatePage(tft_page* page,uint16_t* ui_index,uint16_t number_ofUI,tft_ui
 		page->ui_index[i] = 999;
 	}
 	page->start_ui = start_ui;
-	page->Page_Render_N = Page_Render_N;
 }
 /**@brief  更改当前显示的页面
   *@param  new_page 要更改绑定的位置
@@ -242,18 +221,6 @@ void UI_ChangePage(tft_page* new_page)
 		UI[p->ui_index[i]].is_present = 0;
 		UI[p->ui_index[i]].readyto_present = 0;
 	}
-	//清理循环渲染队列
-	for(int i=0;i<200;i++)
-	{
-		if(QUEUE_RENDER_UI[i]->is_present==100)
-		{//遍历到队列尾，退出
-			break;
-		}
-		QUEUE_RENDER_UI[i] =  &null_ui;
-		queue_render_ui_index = 0;
-	}
-	//固定内容渲染（将页面渲染函数添加到渲染队列）
-	QUEUE_RENDER_FUNC[queue_render_func_index++] = new_page->Page_Render_N;
 	//将本页面ui.ispresent=1,readyto_present=0
 	for(int i=0;i<100;i++)
 	{
@@ -265,14 +232,6 @@ void UI_ChangePage(tft_page* new_page)
 		UI[new_page->ui_index[i]].readyto_present = 0;
 		UI[new_page->ui_index[i]].Func_StateRule(&UI[new_page->ui_index[i]]);
 		UI_AddRender(&UI[new_page->ui_index[i]]);
-	}
-	//渲染本页面的ui
-	for(int i=0;i<100;i++)
-	{
-		if(new_page->ui_index[i]==999)
-		{
-			break;
-		}
 	}
 	//绑定指针
 	UI_Cursor_ChangeUI(new_page->start_ui);

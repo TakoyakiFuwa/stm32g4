@@ -69,7 +69,7 @@ int8_t  color_changed_font_type;
 /*  调色框  */
 /*  调色框-渲染部分  */
 //页面渲染
-void Render_Page0(void)
+void Render_CB_Background(tft_ui* u)
 {
 	//内框
 	TFTF_DrawRect(UI[InUI_ColorBox].x,UI[InUI_ColorBox].y,320,51,UI[InUI_ColorBox].font->bk_color);
@@ -81,7 +81,7 @@ void Render_Page0(void)
 //颜色选择框->示例图片
 void Render_CB_Sample(tft_ui* u)
 {
-	TFTF_Single_01Pic(u->x+9,u->y+9,FONT[InFT_CB_Sample]);
+	TFTF_Single_01Pic(u->x+9,UI[InUI_ColorBox].y+9,FONT[InFT_CB_Sample]);
 	TFTF_DrawFrame(u->x+4,u->y+4,42,42,0,2);
 }
 //常规图片渲染
@@ -132,7 +132,7 @@ void Render_CB_RGB(tft_ui* u)
 //调色框第二行的背景，用于覆盖
 void Render_CB_Line2_BK(tft_ui* u)
 {
-	TFTF_DrawRect(UI[InUI_ColorBox].x+u->x,UI[InUI_ColorBox].y+u->y,SCREEN_WIDTH,24,FONT[InFT_ColorBox].bk_color);
+	TFTF_DrawRect(UI[InUI_ColorBox].x+u->x,UI[InUI_ColorBox].y+u->y,SCREEN_WIDTH,u->parameter,FONT[InFT_ColorBox].bk_color);
 }
 
 
@@ -659,6 +659,7 @@ static void Other_ChangeFont(tft_font* f)
 	if(f->size_height!=2*f->size_width)
 	{
 		Other_StringCpy(UI[InUI_CB_FONTChange].value_text,"  __Not_Text_!__  ");
+		UI_AddRender(&UI[InUI_CB_FONTChange]);
 		return;
 	}
 	switch(f->size_height)
@@ -683,6 +684,7 @@ static void Other_ChangeFont(tft_font* f)
 		break;
 	default:
 		Other_StringCpy(UI[InUI_CB_FONTChange].value_text,"  __Not_Text_!__  ");
+		UI_AddRender(&UI[InUI_CB_FONTChange]);
 		return;
 	}
 }
@@ -768,6 +770,15 @@ void ColorBox_Enter(void)
 	//CB_Sample
 	UI[InUI_CB_Sample].font->bk_color = UI_CURSOR.temp_font->bk_color;
 	UI[InUI_CB_Sample].font->ft_color = UI_CURSOR.temp_font->ft_color;
+	//进行调色器位置判断
+	if(UI[InUI_ColorBox].y!=0 && UI_CURSOR.temp_ui->y+UI_CURSOR.temp_ui->font->size_height>UI[InUI_ColorBox].y)
+	{
+		UI[InUI_ColorBox].y = 0;
+	}
+	else
+	{
+		UI[InUI_ColorBox].y =SCREEN_HEIGHT-51;
+	}
 	//PAGE[0]->调色器页面
 	UI_ChangePage(&PAGE[0]);
 		//字体备份,并重新渲染UI组
@@ -793,6 +804,7 @@ void ColorBox_Exit(void)
 		{
 			UI[i].d_font[j] = color_changed_font[j][font_index];
 		}
+		UI[i].font = UI[i].d_font[0];
 		font_index++;
 	}
 	UI_ChangePage(color_changed_page);
@@ -837,9 +849,9 @@ void Init_UI_ColorBox(void)
 	
 	//UI配置
 	//		颜色选择框			//不会被光标选中	51*320  左侧示例图片(框)
-	UI[InUI_ColorBox] = UI_CreateUI(0,240-51,&FONT[InFT_ColorBox],NULL_UI_Func);
+	UI[InUI_ColorBox] = UI_CreateUI(0,SCREEN_HEIGHT-51,&FONT[InFT_ColorBox],NULL_UI_Func);
 	//		颜色框-示例图片/数字	//不会被光标选中 32*32	坐标相对与颜色选择框 +9，+9 边框+4,+4,42,42,3 
-	UI[InUI_CB_Sample] = UI_CreateUI(0,240-51,&FONT[InFT_CB_Sample],Render_CB_Sample);
+	UI[InUI_CB_Sample] = UI_CreateUI(0,0,&FONT[InFT_CB_Sample],Render_CB_Sample);
 	//		颜色框-更换当前调整的UI
 	UI[InUI_CB_Choose] = UI_CreateUI(54,1,&FONT[InFT_ICON_0],Render_CB_Pic);
 	//		颜色框-字体0
@@ -955,6 +967,7 @@ void Init_UI_ColorBox(void)
 	UI[InUI_CB_RGB_False].parameter = TFT_RGB888To565(0xc93756);
 	//	 	InUI_CB_Line2_BK			//调色框第二行背景
 	UI[InUI_CB_Line2_BK] = UI_CreateUI(52,26,&FONT[InFT_ColorBox],Render_CB_Line2_BK);
+	UI[InUI_CB_Line2_BK].parameter = 24;
 	for(int i=InUI_CB_RGB_5;i<=InUI_CB_RGB_False;i++)
 	{
 		UI[i].Func_Event_RIGHT = RIGHT_CursorMove;
@@ -976,13 +989,16 @@ void Init_UI_ColorBox(void)
 	UI[InUI_CB_FONTChange].Func_Event_UP 	= UP_CB_Color;
 	UI[InUI_CB_FONTChange].Func_Event_RIGHT = RIGHT_CB_FONTChange;
 	UI[InUI_CB_FONTChange].Func_Event_LEFT	= LEFT_CB_FONTChange;
+	//		背景板
+	UI[InUI_CB_Background] = UI_CreateUI(0,SCREEN_HEIGHT-51,&FONT[InFT_ColorBox],Render_CB_Background);
 }
 /**@brief  页面初始化
   */
 void Init_Page_ColorBox(void)
 {
 	uint16_t indexs_ofPage0[] = {
-		InUI_ColorBox		
+		InUI_CB_Background
+		,InUI_ColorBox		
 		,InUI_CB_Sample			
 		,InUI_CB_Choose			
 		,InUI_CB_Font0			
@@ -1003,7 +1019,7 @@ void Init_Page_ColorBox(void)
 		,InUI_CB_ColorFix7		
 		,InUI_CB_ColorChange
 	};
-	UI_CreatePage(&PAGE[0],indexs_ofPage0,sizeof(indexs_ofPage0)/sizeof(uint16_t),&UI[InUI_CB_Choose],Render_Page0);
+	UI_CreatePage(&PAGE[0],indexs_ofPage0,sizeof(indexs_ofPage0)/sizeof(uint16_t),&UI[InUI_CB_Choose]);
 }
 
 

@@ -84,6 +84,7 @@ extern tft_page 	PAGE[20];				//页面
 #define		InUI_CB_RGB_False	30		//RGB888 取消
 #define 	InUI_CB_Line2_BK	31		//调色框第二行背景
 #define		InUI_CB_FONTChange	32		//调色框第二行，更改字体			120*24		左右键更换字体，下键确认，上键返回
+#define		InUI_CB_Background	33
 //#define	InUI_CB_End			50		//分配给ColorBox页面的UI就到50
 	//测试页面		51~100		UI_Ins_TestPage.h/c
 	/*
