@@ -244,26 +244,14 @@ void TFTF_Single_Char(uint16_t x,uint16_t y,char _char,tft_font font)
 void TFTF_ShowNum(uint16_t x,uint16_t y,uint32_t num,tft_font font,int8_t digits)
 {
 	uint32_t num_length = 1;
-	int8_t overflow_digits = digits;
-	//测量数字位数
-	for(;num_length<=num;num_length*=10)
-	{
-		digits--;
-	}
 	for(;digits>0;digits--)
-	{
+	{	
 		num_length*=10;
 	}
-	digits=0;
 	//从高位开始显示
 	int8_t i=0;
 	for(num_length/=10;num_length>=1;num_length/=10)
 	{
-		if(++digits>overflow_digits)
-		{
-			TFTF_Single_Char(x+font.size_width*(--i),y,'-',font);
-			return;
-		}
 		TFTF_Single_Char(x+font.size_width*(i++),y,num/num_length+'0',font);
 		//减去最高位
 		num -= (num - (num%num_length));

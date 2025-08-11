@@ -59,6 +59,10 @@ void Init_UI(void)
 	null_font = TFTF_CreateFont((const char*)font_ASCII_PIXEL_2412,999,999,0,0);
 	FONT[InFT_Null] = null_font;
 	UI[InUI_Null] = UI_CreateUI(999,999,&FONT[InFT_Null],NULL_UI_Func);
+	for(int i=0;i<200;i++)
+	{
+		UI[i] = UI[InUI_Null];
+	}
 	//UI创建接口
 	UI_CURSOR.cursor_font = INS_Init_UI();
 	//页面创建接口
@@ -175,6 +179,7 @@ void UI_Cursor_ChangeUI(tft_ui* new_ui)
 {
 	//把当前UI颜色改回来
 	UI_CURSOR.ptr_ui->font = UI_CURSOR.temp_font;
+	UI_CURSOR.ptr_ui->Func_StateRule(UI_CURSOR.ptr_ui);
 	UI_Cursor_Refresh();
 	//记录新指向的UI
 	UI_CURSOR.temp_font = new_ui->font;
@@ -185,6 +190,7 @@ void UI_Cursor_ChangeUI(tft_ui* new_ui)
 	new_ui->font = UI_CURSOR.cursor_font;
 	//光标指向新的UI
 	UI_CURSOR.ptr_ui = new_ui;
+	UI_CURSOR.ptr_ui->Func_StateRule(UI_CURSOR.ptr_ui);
 	UI_Cursor_Refresh();
 }
 /**@brief  重新渲染一下UI指向的内容，应该在每个UI绑定的按键交互中用

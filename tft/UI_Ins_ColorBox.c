@@ -739,7 +739,7 @@ void ColorBox_Enter(void)
 	color_changed_page = UI_CURSOR.ptr_page;
 	color_changed_colorblock_index = InUI_CB_ColorFix0;
 	color_changed_ui_index = UI_CURSOR.ptr_ui->index_start;
-	if(color_changed_ui_index==0)
+	if(color_changed_ui_index==0)	//当前UI没有绑定所在的UI组，重新进行绑定
 	{
 		for(int i=0;UI[color_changed_page->ui_index[i]].is_present!=100;i++)
 		{
