@@ -25,10 +25,15 @@
 #include "qy_ascii_font.h"
 #include "qy_pic.h"
 	//主要实现的两个内部用函数
+/**@brief  设定显示位置
+  *@add    这里宽和高和X/Yend大概是Xend=width+x-1，Yend=height+y-1
+  */
 static void TFTF_SetRect(uint16_t x,uint16_t y,uint16_t width,uint16_t height)
 {
 	TFT_SetRect(x,y,width,height);
 }
+/**@brief  发送单个像素
+  */
 static void TFTF_Pixel(uint16_t rgb565)
 {
 	TFT_SendColor(rgb565);

@@ -38,7 +38,7 @@
 //来自TFT_UI.h
 extern tft_pointer 	UI_CURSOR;				//光标
 extern tft_font 	FONT[300];				//字体
-extern tft_ui 		UI[100];				//UI
+extern tft_ui 		UI[200];				//UI
 extern tft_page 	PAGE[20];				//页面
 
 /*  字体，赋值给光标  */
@@ -82,22 +82,6 @@ tft_page* INS_Init_Page(void)
 	//初始化完成后进入测试页
 	return &PAGE[InPG_TestPage];
 }
-
-
-//测试接口
-void INS_Test(void)
-{
-	Init_UI();
-	while(1)
-	{
-		HAL_Delay(10);
-		CircleRender_UI();
-	
-		
-		TestPage_ClockCircle();
-	}
-}
-
 
 
 

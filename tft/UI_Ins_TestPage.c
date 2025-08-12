@@ -3,6 +3,11 @@
 #include "TFT_UI.h"
 #include "qy_printf.h"
 
+/*
+ *
+ *
+ */
+
 //页面组成
 extern tft_pointer 	UI_CURSOR;				//光标
 extern tft_font 	FONT[300];				//字体
@@ -47,7 +52,6 @@ void Render_TextWithLine(tft_ui* u)
 void Render_TP_Timer_F(tft_ui* u)//秒表外边框
 {
 	TFTF_DrawFrame(u->x,u->y,11*16+20,32+24+3+20,u->font->bk_color,5);
-//	TFTF_DrawFrame(u->x+5,u->y+5,11*16+10,32+24+3+10,u->font->ft_color,5);
 }
 void Render_TP_TR_TextWithPic(tft_ui* u)
 {

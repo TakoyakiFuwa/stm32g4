@@ -6,7 +6,7 @@
 #include "UI_Instance.h"
 #include "UI_Ins_ColorBox.h"
 
-extern uint8_t buff;
+uint8_t buff;
 extern tft_ui UI[10];
 extern tft_pointer UI_CURSOR;
 extern tft_page 	PAGE[20];

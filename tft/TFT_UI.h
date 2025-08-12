@@ -28,7 +28,6 @@ typedef struct tft_ui{
 	tft_font*	d_font[4];			//不同状态下的字体
 	int8_t 		is_present;			//是否显示
 	int8_t		readyto_present;	//判断是否已经在显示队列中,避免重复添加
-//	char		notes[20];			//备注
 	
 	//值(value)，可扩展
 	uint32_t 	value_num;
@@ -68,7 +67,7 @@ typedef struct tft_ui{
 	void (*Func_Event_DOWN)(struct tft_ui* self);	//下移
 	void (*Func_Event_LEFT)(struct tft_ui* self);	//左移
 	void (*Func_Event_RIGHT)(struct tft_ui* self);	//右移
-	void (*Func_Event_F)(struct tft_ui* self);		//确认	(更换颜色)
+	void (*Func_Event_F)(struct tft_ui* self);		//确认
 }tft_ui;
 //光标，结构体不复用，仅实例化一个光标
 typedef struct tft_pointer{
@@ -79,14 +78,7 @@ typedef struct tft_pointer{
 	tft_ui*		temp_ui;		//光标所在UI关联的UI,类似tft_ui.parameter的作用
 	uint16_t 	parameter;		//同tft_ui.parameter
 }tft_pointer;
-//
 
-/*	全局变量
-extern tft_pointer 	UI_CURSOR;				//光标
-extern tft_font 	FONT[100];				//字体
-extern tft_ui 		UI[100];				//UI
-extern tft_page 	PAGE[20];				//页面
- */
 
 /*  UI相关函数  */
 void 	Init_UI(void);

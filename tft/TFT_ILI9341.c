@@ -22,21 +22,22 @@
  * 				|						|	V  V  V
  *				v y						v y
  */
-//PA0  ->CS
-#define PIN_CSH		GPIOA->BSRR = (uint32_t)GPIO_PIN_0
-#define PIN_CSL		GPIOA->BRR  = (uint32_t)GPIO_PIN_0
+ 
+//PA4  ->CS
+#define PIN_CSH		GPIOA->BSRR = (uint32_t)GPIO_PIN_4
+#define PIN_CSL		GPIOA->BRR  = (uint32_t)GPIO_PIN_4
 //PB9  ->RST
 #define PIN_RSTH	GPIOB->BSRR = (uint32_t)GPIO_PIN_9
 #define PIN_RSTL	GPIOB->BRR  = (uint32_t)GPIO_PIN_9
-//PC14  ->DC
-#define PIN_DC_DATA		GPIOC->BSRR = (uint32_t)GPIO_PIN_14
-#define PIN_DC_CMD		GPIOC->BRR  = (uint32_t)GPIO_PIN_14
-//PB8  ->MOSI
-#define PIN_DATAH	GPIOB->BSRR = (uint32_t)GPIO_PIN_8
-#define PIN_DATAL	GPIOB->BRR  = (uint32_t)GPIO_PIN_8
-//PC13  ->SCK
-#define PIN_SCKH	GPIOC->BSRR = (uint32_t)GPIO_PIN_13
-#define PIN_SCKL	GPIOC->BRR  = (uint32_t)GPIO_PIN_13
+//PB1  ->DC
+#define PIN_DC_DATA		GPIOB->BSRR = (uint32_t)GPIO_PIN_1
+#define PIN_DC_CMD		GPIOB->BRR  = (uint32_t)GPIO_PIN_1
+//PA7  ->MOSI
+#define PIN_DATAH	GPIOA->BSRR = (uint32_t)GPIO_PIN_7
+#define PIN_DATAL	GPIOA->BRR  = (uint32_t)GPIO_PIN_7
+//PA5  ->SCK
+#define PIN_SCKH	GPIOA->BSRR = (uint32_t)GPIO_PIN_5
+#define PIN_SCKL	GPIOA->BRR  = (uint32_t)GPIO_PIN_5
 
 /**@brief  TFT引脚初始化
   *@param  void
@@ -45,26 +46,30 @@
   */
 static void Init_TFT_PIN(void)
 {
+	__HAL_RCC_GPIOA_CLK_ENABLE();
+	__HAL_RCC_GPIOB_CLK_ENABLE();
+	__HAL_RCC_GPIOC_CLK_ENABLE();
 	//引脚初始化
 	GPIO_InitTypeDef GPIO_InitStruct;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pin = GPIO_PIN_0;
+	GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_7;
 	GPIO_InitStruct.Pull = GPIO_PULLUP;
-	GPIO_InitStruct.Speed = GPIO_SPEED_MEDIUM;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
 	HAL_GPIO_Init(GPIOA,&GPIO_InitStruct);
-	GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9;
+	GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9|GPIO_PIN_1;
 	HAL_GPIO_Init(GPIOB,&GPIO_InitStruct);
 	GPIO_InitStruct.Pin = GPIO_PIN_13|GPIO_PIN_14;
 	HAL_GPIO_Init(GPIOC,&GPIO_InitStruct);
-	
 }
 /**@brief  与TFT交换数据
   *@param  byte 交换的数据
   *@retval void
   *@add    交换1byte数据，可根据接口调整成并口
   */
+//extern SPI_HandleTypeDef hspi1;
 void TFT_Swap(uint8_t byte)
 {
+	//软件发送1byte
 	PIN_CSL;//对hal库不太熟悉 有时间回来改成硬件SPI
 	for(int i=0;i<8;i++)
 	{

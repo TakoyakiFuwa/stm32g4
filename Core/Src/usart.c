@@ -25,7 +25,6 @@
 /* USER CODE END 0 */
 
 UART_HandleTypeDef huart1;
-uint8_t buff;
 
 /* USART1 init function */
 
@@ -76,21 +75,12 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
 {
 
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
   if(uartHandle->Instance==USART1)
   {
   /* USER CODE BEGIN USART1_MspInit 0 */
 
   /* USER CODE END USART1_MspInit 0 */
-
-  /** Initializes the peripherals clocks
-  */
-    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1;
-    PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK2;
-    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-    {
-      Error_Handler();
-    }
+    LL_RCC_SetUSARTClockSource(LL_RCC_USART1_CLKSOURCE_PCLK2);
 
     /* USART1 clock enable */
     __HAL_RCC_USART1_CLK_ENABLE();
@@ -111,9 +101,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
     HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(USART1_IRQn);
   /* USER CODE BEGIN USART1_MspInit 1 */
-		//设置UART接受中断
-	HAL_UART_Receive_IT(&huart1,&buff,sizeof(buff));
-	__HAL_UART_ENABLE_IT(&huart1,UART_IT_RXNE);
+
   /* USER CODE END USART1_MspInit 1 */
   }
 }

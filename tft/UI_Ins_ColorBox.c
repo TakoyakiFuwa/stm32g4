@@ -11,7 +11,7 @@
  *	用ColorBox_Exit退出
  *	1000行代码，真不敢想象
  *	
- *
+ *				2025/8/9-10:50.秦羽
  */
 
 extern tft_pointer 	UI_CURSOR;				//光标
@@ -82,7 +82,7 @@ void Render_CB_Background(tft_ui* u)
 void Render_CB_Sample(tft_ui* u)
 {
 	TFTF_Single_01Pic(u->x+9,UI[InUI_ColorBox].y+9,FONT[InFT_CB_Sample]);
-	TFTF_DrawFrame(u->x+4,u->y+4,42,42,0,2);
+	TFTF_DrawFrame(u->x+4,UI[InUI_ColorBox].y+4,42,42,0,2);
 }
 //常规图片渲染
 void Render_CB_Pic(tft_ui* u)
